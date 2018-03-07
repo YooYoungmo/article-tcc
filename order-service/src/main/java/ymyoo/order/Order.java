@@ -6,15 +6,20 @@ public class Order {
     private Integer qty;
     private Long paymentAmt;
 
-    public Order(String productId, Integer qty, Long paymentAmt) {
-        this.orderId = generateOrderId();
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public void setProductId(String productId) {
         this.productId = productId;
-        this.paymentAmt = paymentAmt;
+    }
+
+    public void setQty(Integer qty) {
         this.qty = qty;
     }
 
-    private String generateOrderId() {
-        return java.util.UUID.randomUUID().toString().toUpperCase();
+    public void setPaymentAmt(Long paymentAmt) {
+        this.paymentAmt = paymentAmt;
     }
 
     public String getOrderId() {
