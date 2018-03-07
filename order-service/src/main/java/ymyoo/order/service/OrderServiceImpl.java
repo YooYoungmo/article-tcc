@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import ymyoo.order.Order;
 
+import java.net.URI;
+
 @Service
 public class OrderServiceImpl implements OrderService {
     private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
@@ -15,32 +17,57 @@ public class OrderServiceImpl implements OrderService {
     public void placeOrder(final Order order) {
         log.info("Place Order ...");
 
-        // 1. 재고 차감
-        reduceStock(order);
+        // 1. 재고 차감(Try)
+        URI stockURI = tryStockReduction(order);
 
-        // 2. 결제 요청
-        payOrder(order);
+        // 2. 결제 요청(Try)
+//        final String paymentId = tryPayment(order);
+        tryPayment(order);
+
+        // TODO 구매 주문 생성
+
+        // 트랜젝션 확정(Confirm)
+        confirmStockReduction(stockURI);
+//        confirmPayment(paymentId);
+
 
         log.info("End of place order");
     }
 
-    private void reduceStock(final Order order) {
+    private void confirmStockReduction(URI uri) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        final String STOCK_API_BASE_URL = "http://localhost:8081/api/v1/";
-        final String requestURL = STOCK_API_BASE_URL + "products/" + order.getProductId();
-        final String requestBody = "{\"adjustmentType\":\"REDUCE\",\"qty\": " + order.getQty() + "}";
-
-        ResponseEntity<String> response = restTemplate.exchange(requestURL, HttpMethod.PUT, new HttpEntity(requestBody, headers), String.class);
+        ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(headers), String.class);
 
         if(response.getStatusCode() != HttpStatus.OK) {
-            throw new RuntimeException("재고 차감 오류");
+            throw new RuntimeException("재고 차감 요청 오류");
         }
     }
 
-    private void payOrder(final Order order) {
+    private URI tryStockReduction(final Order order) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        final String requestURL = "http://localhost:8081/api/v1/stocks";
+        final String requestBody = "{" +
+                "\"adjustmentType\": \"REDUCE\"," +
+                "\"productId\": \"" + order.getProductId() + "\"," +
+                "\"qty\": " + order.getQty() +
+                "}";
+
+        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+
+        if(response.getStatusCode() != HttpStatus.CREATED) {
+            throw new RuntimeException("재고 차감 요청 오류");
+        }
+
+        return response.getHeaders().getLocation();
+    }
+
+    private void tryPayment(final Order order) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
