@@ -46,7 +46,6 @@ public class StockRestController {
         reservedStockRepository.save(reservedStock);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedStock.getId()).toUri();
-
         return ResponseEntity.created(location).build();
     }
 
@@ -66,8 +65,6 @@ public class StockRestController {
 
         reservedStock.setStatus(Status.CONFIRM);
         reservedStockRepository.save(reservedStock);
-
-        log.info("ReservedStock : " + reservedStock.toString());
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
