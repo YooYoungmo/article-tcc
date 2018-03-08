@@ -3,7 +3,7 @@ package ymyoo.order;
 public class Order {
     private String orderId;
     private String productId;
-    private Integer qty;
+    private Long qty;
     private Long paymentAmt;
 
     public void setOrderId(String orderId) {
@@ -12,10 +12,6 @@ public class Order {
 
     public void setProductId(String productId) {
         this.productId = productId;
-    }
-
-    public void setQty(Integer qty) {
-        this.qty = qty;
     }
 
     public void setPaymentAmt(Long paymentAmt) {
@@ -34,7 +30,11 @@ public class Order {
         return paymentAmt;
     }
 
-    public Integer getQty() {
+    public Long getQty() {
         return qty;
+    }
+
+    public void setQty(Long qty) {
+        this.qty = qty;
     }
 }

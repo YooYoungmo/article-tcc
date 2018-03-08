@@ -28,3 +28,6 @@ hs_err_pid*
 /order-service/target/
 /stock-service/target/
 /payment-service/target/
+/order-service/order-service.iml
+/payment-service/payment-service.iml
+/stock-service/stock-service.iml
