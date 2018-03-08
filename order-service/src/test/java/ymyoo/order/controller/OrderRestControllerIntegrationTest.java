@@ -8,6 +8,9 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
@@ -21,11 +24,11 @@ public class OrderRestControllerIntegrationTest {
     public void placeOrder() {
         // given
         final String requestURL = "/api/v1/orders";
-        final String requestBody = "{" +
-                "\"productId\": \"prd-0001\"," +
-                "\"qty\": 10," +
-                "\"paymentAmt\": 20000" +
-                "}";
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("productId", "prd-0001");
+        requestBody.put("qty", 10);
+        requestBody.put("paymentAmt", 20000);
 
         // when
         HttpHeaders headers = new HttpHeaders();

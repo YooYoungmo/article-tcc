@@ -8,6 +8,8 @@ import org.springframework.web.client.RestTemplate;
 import ymyoo.order.Order;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -18,7 +20,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("Place Order ...");
 
         // 1. 재고 차감(Try)
-        URI stockURI = tryStockReduction(order);
+        URI stockURI = tryStock(order);
 
         // 2. 결제 요청(Try)
         URI paymentURI = tryPayment(order);
@@ -26,24 +28,23 @@ public class OrderServiceImpl implements OrderService {
         // TODO 구매 주문 생성
 
         // 트랜젝션 확정(Confirm)
-        confirmStockReduction(stockURI);
+        confirmStock(stockURI);
         confirmPayment(paymentURI);
 
 
         log.info("End of place order");
     }
 
-    private URI tryStockReduction(final Order order) {
+    private URI tryStock(final Order order) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         final String requestURL = "http://localhost:8081/api/v1/stocks";
-        final String requestBody = "{" +
-                "\"adjustmentType\": \"REDUCE\"," +
-                "\"productId\": \"" + order.getProductId() + "\"," +
-                "\"qty\": " + order.getQty() +
-                "}";
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("adjustmentType", "REDUCE");
+        requestBody.put("productId", order.getProductId());
+        requestBody.put("qty", order.getQty());
 
         ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
 
@@ -54,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
         return response.getHeaders().getLocation();
     }
 
-    private void confirmStockReduction(URI uri) {
+    private void confirmStock(URI uri) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -72,10 +73,9 @@ public class OrderServiceImpl implements OrderService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         final String requestURL = "http://localhost:8082/api/v1/payments";
-        final String requestBody = "{" +
-                "\"orderId\": \"" + order.getOrderId() +"\"," +
-                "\"paymentAmt\": " + order.getPaymentAmt() +
-                "}";
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("orderId", order.getOrderId());
+        requestBody.put("paymentAmt", order.getPaymentAmt());
 
         ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
 
