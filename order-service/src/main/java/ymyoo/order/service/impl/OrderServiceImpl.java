@@ -33,6 +33,14 @@ public class OrderServiceImpl implements OrderService {
         // 2. 결제 요청(Try)
         URI paymentURI = payOrder(order);
 
+        if(order.getProductId().equals("prd-0002")) {
+            // Exception Path : Failure Before Confirm
+            log.info(String.format("Stock URI :%s", stockURI));
+            log.info(String.format("Payment URI :%s", paymentURI));
+
+            throw new RuntimeException("Error Before Confirm");
+        }
+
         // 3. 트랜젝션 확정(Confirm)
         tccAdapter.confirm(stockURI, paymentURI);
 
