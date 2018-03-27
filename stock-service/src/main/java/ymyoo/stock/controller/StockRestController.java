@@ -1,5 +1,6 @@
 package ymyoo.stock.controller;
 
+import com.sun.tools.corba.se.idl.constExpr.Times;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,15 @@ import ymyoo.stock.repository.ReservedStockRepository;
 import ymyoo.stock.repository.StockRepository;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/v1/stocks")
 public class StockRestController {
     private static final Logger log = LoggerFactory.getLogger(StockRestController.class);
+
+    // 3초 타임 아웃
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
     private StockRepository stockRepository;
 
@@ -42,7 +47,6 @@ public class StockRestController {
                 stockAdjustment.getProductId(),
                 stockAdjustment.getQty(),
                 Status.TRY);
-
         reservedStockRepository.save(reservedStock);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedStock.getId()).toUri();
@@ -52,6 +56,17 @@ public class StockRestController {
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmStockAdjustment(@PathVariable Long id) {
         ReservedStock reservedStock = reservedStockRepository.findOne(id);
+
+        final long confirmTime = System.currentTimeMillis();
+        final long tryTime = reservedStock.getCreated().getTime();
+
+        final long duration = confirmTime - tryTime;
+
+        log.info("duration : " + TimeUnit.MILLISECONDS.toSeconds(duration));
+        if(duration > TIMEOUT) {
+            reservedStockRepository.delete(reservedStock);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
 
         if(reservedStock.getAdjustmentType() == AdjustmentType.REDUCE) {
             Stock stock = stockRepository.findByProductId(reservedStock.getProductId());

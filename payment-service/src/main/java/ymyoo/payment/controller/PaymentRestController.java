@@ -16,10 +16,13 @@ import ymyoo.payment.repository.ReservedPaymentRepository;
 
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/v1/payments")
 public class PaymentRestController {
+    // 3초 타임 아웃
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
     private static final Logger log = LoggerFactory.getLogger(PaymentRestController.class);
 
@@ -49,6 +52,17 @@ public class PaymentRestController {
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmPayment(@PathVariable Long id) {
         ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
+
+        final long confirmTime = System.currentTimeMillis();
+        final long tryTime = reservedPayment.getCreated().getTime();
+
+        final long duration = confirmTime - tryTime;
+
+        log.info("duration : " + TimeUnit.MILLISECONDS.toSeconds(duration));
+        if(duration > TIMEOUT) {
+            reservedPaymentRepository.delete(reservedPayment);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
 
         paymentRepository.save(new Payment(reservedPayment.getOrderId(), reservedPayment.getPaymentAmt()));
         paymentRepository.flush();

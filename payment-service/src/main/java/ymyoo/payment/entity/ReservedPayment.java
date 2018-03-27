@@ -3,6 +3,7 @@ package ymyoo.payment.entity;
 import ymyoo.payment.Status;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 public class ReservedPayment {
@@ -17,6 +18,10 @@ public class ReservedPayment {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date created;
+
+
     public ReservedPayment() {
     }
 
@@ -24,6 +29,7 @@ public class ReservedPayment {
         this.orderId = orderId;
         this.paymentAmt = paymentAmt;
         this.status = status;
+        this.created = new Date();
     }
 
     public Long getId() {
@@ -46,6 +52,9 @@ public class ReservedPayment {
         this.status = status;
     }
 
+    public Date getCreated() {
+        return created;
+    }
 
     @Override
     public String toString() {
@@ -54,6 +63,7 @@ public class ReservedPayment {
                 ", orderId='" + orderId + '\'' +
                 ", paymentAmt=" + paymentAmt +
                 ", status=" + status +
+                ", created=" + created +
                 '}';
     }
 }

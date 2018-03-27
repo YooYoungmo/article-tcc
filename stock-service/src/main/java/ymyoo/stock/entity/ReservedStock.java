@@ -4,6 +4,7 @@ import ymyoo.stock.AdjustmentType;
 import ymyoo.stock.Status;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 public class ReservedStock {
@@ -21,6 +22,9 @@ public class ReservedStock {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date created;
+
     public ReservedStock() {
     }
 
@@ -29,6 +33,7 @@ public class ReservedStock {
         this.productId = productId;
         this.qty = qty;
         this.status = status;
+        this.created = new Date();
     }
 
     public Long getId() {
@@ -55,6 +60,10 @@ public class ReservedStock {
         this.status = status;
     }
 
+    public Date getCreated() {
+        return created;
+    }
+
     @Override
     public String toString() {
         return "ReservedStock{" +
@@ -63,6 +72,8 @@ public class ReservedStock {
                 ", productId='" + productId + '\'' +
                 ", qty=" + qty +
                 ", status=" + status +
+                ", created=" + created +
                 '}';
     }
 }
+
