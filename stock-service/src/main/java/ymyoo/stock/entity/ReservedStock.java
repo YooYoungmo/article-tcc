@@ -28,11 +28,10 @@ public class ReservedStock {
     public ReservedStock() {
     }
 
-    public ReservedStock(AdjustmentType adjustmentType, String productId, Long qty, Status status) {
+    public ReservedStock(AdjustmentType adjustmentType, String productId, Long qty) {
         this.adjustmentType = adjustmentType;
         this.productId = productId;
         this.qty = qty;
-        this.status = status;
         this.created = new Date();
     }
 

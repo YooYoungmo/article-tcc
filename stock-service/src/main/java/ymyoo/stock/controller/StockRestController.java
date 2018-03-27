@@ -1,6 +1,5 @@
 package ymyoo.stock.controller;
 
-import com.sun.tools.corba.se.idl.constExpr.Times;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +44,7 @@ public class StockRestController {
     public ResponseEntity tryStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
         ReservedStock reservedStock = new ReservedStock(AdjustmentType.valueOf(stockAdjustment.getAdjustmentType()),
                 stockAdjustment.getProductId(),
-                stockAdjustment.getQty(),
-                Status.TRY);
+                stockAdjustment.getQty());
         reservedStockRepository.save(reservedStock);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedStock.getId()).toUri();
@@ -64,7 +62,6 @@ public class StockRestController {
 
         log.info("duration : " + TimeUnit.MILLISECONDS.toSeconds(duration));
         if(duration > TIMEOUT) {
-            reservedStockRepository.delete(reservedStock);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
@@ -78,7 +75,7 @@ public class StockRestController {
             log.info("After adjustStock : " + stock.toString());
         }
 
-        reservedStock.setStatus(Status.CONFIRM);
+        reservedStock.setStatus(Status.CONFIRMED);
         reservedStockRepository.save(reservedStock);
 
         return new ResponseEntity<>(HttpStatus.OK);

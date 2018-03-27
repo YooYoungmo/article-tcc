@@ -25,10 +25,9 @@ public class ReservedPayment {
     public ReservedPayment() {
     }
 
-    public ReservedPayment(String orderId, Long paymentAmt, Status status) {
+    public ReservedPayment(String orderId, Long paymentAmt) {
         this.orderId = orderId;
         this.paymentAmt = paymentAmt;
-        this.status = status;
         this.created = new Date();
     }
 

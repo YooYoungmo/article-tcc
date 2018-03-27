@@ -42,7 +42,7 @@ public class PaymentRestController {
 
     @PostMapping
     public ResponseEntity tryPayment(@RequestBody PaymentRequest paymentRequest) {
-        ReservedPayment reservedPayment = new ReservedPayment(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt(), Status.TRY);
+        ReservedPayment reservedPayment = new ReservedPayment(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt());
         reservedPaymentRepository.save(reservedPayment);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedPayment.getId()).toUri();
@@ -60,14 +60,13 @@ public class PaymentRestController {
 
         log.info("duration : " + TimeUnit.MILLISECONDS.toSeconds(duration));
         if(duration > TIMEOUT) {
-            reservedPaymentRepository.delete(reservedPayment);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
         paymentRepository.save(new Payment(reservedPayment.getOrderId(), reservedPayment.getPaymentAmt()));
         paymentRepository.flush();
 
-        reservedPayment.setStatus(Status.CONFIRM);
+        reservedPayment.setStatus(Status.CONFIRMED);
         reservedPaymentRepository.save(reservedPayment);
 
         log.info("List of Payments");

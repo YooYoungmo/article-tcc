@@ -1,7 +1,7 @@
 package ymyoo.payment;
 
 public enum Status {
-    TRY,
+    TRYED,
     CANCEL,
-    CONFIRM
+    CONFIRMED
 }
