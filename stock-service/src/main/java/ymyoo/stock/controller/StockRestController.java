@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import ymyoo.stock.AdjustmentType;
 import ymyoo.stock.Status;
+import ymyoo.stock.dto.ParticipantLink;
 import ymyoo.stock.dto.StockAdjustment;
 import ymyoo.stock.entity.ReservedStock;
 import ymyoo.stock.entity.Stock;
@@ -16,6 +17,7 @@ import ymyoo.stock.repository.ReservedStockRepository;
 import ymyoo.stock.repository.StockRepository;
 
 import java.net.URI;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -41,14 +43,17 @@ public class StockRestController {
     }
 
     @PostMapping
-    public ResponseEntity tryStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
+    public ResponseEntity<ParticipantLink> reserveStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
         ReservedStock reservedStock = new ReservedStock(AdjustmentType.valueOf(stockAdjustment.getAdjustmentType()),
                 stockAdjustment.getProductId(),
                 stockAdjustment.getQty());
+
         reservedStockRepository.save(reservedStock);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedStock.getId()).toUri();
-        return ResponseEntity.created(location).build();
+        final long expires = reservedStock.getCreated().getTime() + TIMEOUT;
+
+        return new ResponseEntity<>(new ParticipantLink(location, new Date(expires)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")

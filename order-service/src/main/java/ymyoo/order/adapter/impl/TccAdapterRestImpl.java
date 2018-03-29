@@ -3,6 +3,7 @@ package ymyoo.order.adapter.impl;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.TccAdapter;
 
 import java.net.URI;
@@ -12,19 +13,19 @@ import java.util.Map;
 public class TccAdapterRestImpl implements TccAdapter {
 
     @Override
-    public URI doTry(final String requestURL, final Map<String, Object> requestBody) {
+    public ParticipantLink doTry(final String requestURL, final Map<String, Object> requestBody) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+        ResponseEntity<ParticipantLink> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), ParticipantLink.class);
 
         if(response.getStatusCode() != HttpStatus.CREATED) {
             throw new RuntimeException(String.format("TRY Error[URI : %s][HTTP Status : %s]",
                     requestURL, response.getStatusCode().name()));
         }
 
-        return response.getHeaders().getLocation();
+        return response.getBody();
     }
 
     @Override

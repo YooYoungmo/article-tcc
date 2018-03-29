@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ymyoo.order.Order;
+import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.TccAdapter;
 import ymyoo.order.service.OrderService;
 
@@ -28,26 +29,26 @@ public class OrderServiceImpl implements OrderService {
         log.info("Place Order ...");
 
         // 1. 재고 차감(Try)
-        URI stockURI = reduceStock(order);
+        ParticipantLink stockParticipantLink = reduceStock(order);
 
         // 2. 결제 요청(Try)
-        URI paymentURI = payOrder(order);
+        ParticipantLink paymentParticipantLink = payOrder(order);
 
         if(order.getProductId().equals("prd-0002")) {
             // Exception Path : Failure Before Confirm
-            log.info(String.format("Stock URI :%s", stockURI));
-            log.info(String.format("Payment URI :%s", paymentURI));
+            log.info(String.format("Stock URI :%s", stockParticipantLink.getUri()));
+            log.info(String.format("Payment URI :%s", paymentParticipantLink.getUri()));
 
             throw new RuntimeException("Error Before Confirm");
         }
 
         // 3. 트랜젝션 확정(Confirm)
-        tccAdapter.confirm(stockURI, paymentURI);
+        tccAdapter.confirm(stockParticipantLink.getUri(), paymentParticipantLink.getUri());
 
         log.info("End of place order");
     }
 
-    private URI reduceStock(final Order order) {
+    private ParticipantLink reduceStock(final Order order) {
         final String requestURL = "http://localhost:8081/api/v1/stocks";
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("adjustmentType", "REDUCE");
@@ -57,7 +58,7 @@ public class OrderServiceImpl implements OrderService {
         return tccAdapter.doTry(requestURL, requestBody);
     }
 
-    private URI payOrder(final Order order) {
+    private ParticipantLink payOrder(final Order order) {
         final String requestURL = "http://localhost:8082/api/v1/payments";
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("orderId", order.getOrderId());

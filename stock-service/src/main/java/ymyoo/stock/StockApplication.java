@@ -9,7 +9,9 @@ import org.springframework.context.annotation.Bean;
 import ymyoo.stock.entity.Stock;
 import ymyoo.stock.repository.StockRepository;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.TimeZone;
 
 @SpringBootApplication
 public class StockApplication {

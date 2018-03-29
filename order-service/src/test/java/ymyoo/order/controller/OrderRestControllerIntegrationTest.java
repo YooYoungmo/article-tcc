@@ -1,8 +1,5 @@
 package ymyoo.order.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +10,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,23 +70,6 @@ public class OrderRestControllerIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 
         List<String> uris = extractURIs(outputCapture.toString());
-
-        // Reserved 상태 확인
-        uris.forEach(uri -> {
-            ResponseEntity<String> reservedResponse = restTemplate.getForEntity(uri, String.class);
-            assertThat(reservedResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-            Map<String, String> responseBody;
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                responseBody = mapper.readValue(reservedResponse.getBody(), new TypeReference<HashMap<String,String>>(){});
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            assertThat(responseBody.get("url")).isEqualTo(uri);
-            assertThat(responseBody.get("timeout")).isEqualTo("5 SECOND");
-        });
 
         // 타임 아웃 테스트를 위한 대기
         waitCurrentThread(5);

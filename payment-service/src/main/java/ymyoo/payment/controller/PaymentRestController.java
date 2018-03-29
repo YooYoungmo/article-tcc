@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import ymyoo.payment.Status;
+import ymyoo.payment.dto.ParticipantLink;
 import ymyoo.payment.dto.PaymentRequest;
 import ymyoo.payment.entity.Payment;
 import ymyoo.payment.entity.ReservedPayment;
@@ -15,6 +16,7 @@ import ymyoo.payment.repository.PaymentRepository;
 import ymyoo.payment.repository.ReservedPaymentRepository;
 
 import java.net.URI;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -41,12 +43,14 @@ public class PaymentRestController {
     }
 
     @PostMapping
-    public ResponseEntity tryPayment(@RequestBody PaymentRequest paymentRequest) {
+    public ResponseEntity<ParticipantLink> tryPayment(@RequestBody PaymentRequest paymentRequest) {
         ReservedPayment reservedPayment = new ReservedPayment(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt());
         reservedPaymentRepository.save(reservedPayment);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedPayment.getId()).toUri();
-        return ResponseEntity.created(location).build();
+        final long expires = reservedPayment.getCreated().getTime() + TIMEOUT;
+
+        return new ResponseEntity<>(new ParticipantLink(location, new Date(expires)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
