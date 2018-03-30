@@ -38,7 +38,7 @@ public class OrderRestControllerIntegrationTest {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("productId", "prd-0001");
         requestBody.put("qty", 10);
-        requestBody.put("paymentAmt", 20000);
+        requestBody.put("paymentAmt", 10000);
 
         // when
         HttpHeaders headers = new HttpHeaders();
@@ -58,7 +58,7 @@ public class OrderRestControllerIntegrationTest {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("productId", "prd-0002");
         requestBody.put("qty", 1);
-        requestBody.put("paymentAmt", 5);
+        requestBody.put("paymentAmt", 20000);
 
         // when
         HttpHeaders headers = new HttpHeaders();
@@ -75,6 +75,34 @@ public class OrderRestControllerIntegrationTest {
         waitCurrentThread(5);
 
         // 타임 아웃 확인(TCC Timeout)
+        uris.forEach(uri -> {
+            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
+            assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        });
+    }
+
+    @Test
+    public void placeOrder_Failure_After_Confirm() {
+        // given
+        final String requestURL = "/api/v1/orders";
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("productId", "prd-0003");
+        requestBody.put("qty", 1);
+        requestBody.put("paymentAmt", 30000);
+
+        // when
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        List<String> uris = extractURIs(outputCapture.toString());
+
+        // 취소 처리 확인
         uris.forEach(uri -> {
             ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
             assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

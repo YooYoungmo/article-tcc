@@ -77,6 +77,6 @@ public class PaymentRestController {
         List<Payment> findAll = paymentRepository.findAll();
         findAll.forEach(findPayment -> log.info(findPayment.toString()));
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

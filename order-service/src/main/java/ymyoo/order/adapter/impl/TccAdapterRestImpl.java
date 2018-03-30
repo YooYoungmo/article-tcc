@@ -34,7 +34,7 @@ public class TccAdapterRestImpl implements TccAdapter {
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
 
-            if(response.getStatusCode() != HttpStatus.OK) {
+            if(response.getStatusCode() != HttpStatus.NO_CONTENT) {
                 throw new RuntimeException(String.format("Confirm Error[URI : %s][HTTP Status : %s]",
                         uri.toString(), response.getStatusCode().name()));
             }

@@ -83,6 +83,6 @@ public class StockRestController {
         reservedStock.setStatus(Status.CONFIRMED);
         reservedStockRepository.save(reservedStock);
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
