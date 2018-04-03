@@ -1,7 +1,10 @@
 package ymyoo.order.adapter.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.TccAdapter;
@@ -11,10 +14,12 @@ import java.util.Map;
 
 @Component
 public class TccAdapterRestImpl implements TccAdapter {
+    private static final Logger log = LoggerFactory.getLogger(TccAdapterRestImpl.class);
+
+    private RestTemplate restTemplate = new RestTemplate();
 
     @Override
     public ParticipantLink doTry(final String requestURL, final Map<String, Object> requestBody) {
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -31,12 +36,22 @@ public class TccAdapterRestImpl implements TccAdapter {
     @Override
     public void confirm(final URI... uris) {
         for (URI uri : uris) {
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
+            try {
+                restTemplate.put(uri, null);
+            } catch (RestClientException e) {
+                cancel(uris);
+                throw new RuntimeException(String.format("Confirm Error[URI : %s]",
+                        uri.toString()), e);
+            }
+        }
+    }
 
-            if(response.getStatusCode() != HttpStatus.NO_CONTENT) {
-                throw new RuntimeException(String.format("Confirm Error[URI : %s][HTTP Status : %s]",
-                        uri.toString(), response.getStatusCode().name()));
+    private void cancel(final URI... uris) {
+        for (URI uri : uris) {
+            try {
+                restTemplate.delete(uri);
+            } catch (RestClientException e) {
+                log.error(String.format("Cancel Error[URI : %s]", uri.toString()), e);
             }
         }
     }

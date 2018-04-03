@@ -53,6 +53,7 @@ public class StockRestController {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedStock.getId()).toUri();
         final long expires = reservedStock.getCreated().getTime() + TIMEOUT;
 
+        log.info("Reserved Stock :" + reservedStock.getId());
         return new ResponseEntity<>(new ParticipantLink(location, new Date(expires)), HttpStatus.CREATED);
     }
 
@@ -60,6 +61,12 @@ public class StockRestController {
     public ResponseEntity<Void> confirmStockAdjustment(@PathVariable Long id) {
         ReservedStock reservedStock = reservedStockRepository.findOne(id);
 
+        // Cancel 확인
+        if(reservedStock.getStatus() == Status.CANCEL) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        // expires 확인
         final long confirmTime = System.currentTimeMillis();
         final long tryTime = reservedStock.getCreated().getTime();
 
@@ -83,6 +90,23 @@ public class StockRestController {
         reservedStock.setStatus(Status.CONFIRMED);
         reservedStockRepository.save(reservedStock);
 
+        log.info("Confirm Stock :" + id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelStockAdjustment(@PathVariable Long id) {
+        ReservedStock reservedStock = reservedStockRepository.findOne(id);
+
+        if(reservedStock.getStatus() == Status.CONFIRMED) {
+            // 이미 Confirm 되었다면..
+            // 재고 되돌리기... 로직
+        }
+
+        reservedStock.setStatus(Status.CANCEL);
+        reservedStockRepository.save(reservedStock);
+
+        log.info("Cancel Stock :" + id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

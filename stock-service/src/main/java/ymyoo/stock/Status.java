@@ -1,5 +1,6 @@
 package ymyoo.stock;
 
 public enum Status {
-    CONFIRMED
+    CONFIRMED,
+    CANCEL
 }

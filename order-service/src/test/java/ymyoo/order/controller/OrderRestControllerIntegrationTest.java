@@ -89,7 +89,7 @@ public class OrderRestControllerIntegrationTest {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("productId", "prd-0003");
         requestBody.put("qty", 1);
-        requestBody.put("paymentAmt", 30000);
+        requestBody.put("paymentAmt", 300000);
 
         // when
         HttpHeaders headers = new HttpHeaders();

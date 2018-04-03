@@ -50,12 +50,21 @@ public class PaymentRestController {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedPayment.getId()).toUri();
         final long expires = reservedPayment.getCreated().getTime() + TIMEOUT;
 
+        log.info("Reserved Payment : " + reservedPayment.getId());
         return new ResponseEntity<>(new ParticipantLink(location, new Date(expires)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmPayment(@PathVariable Long id) {
         ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
+
+        if(reservedPayment.getStatus() == Status.CANCEL) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        if(reservedPayment.getPaymentAmt() >= 300000) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         final long confirmTime = System.currentTimeMillis();
         final long tryTime = reservedPayment.getCreated().getTime();
@@ -67,6 +76,7 @@ public class PaymentRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
+
         paymentRepository.save(new Payment(reservedPayment.getOrderId(), reservedPayment.getPaymentAmt()));
         paymentRepository.flush();
 
@@ -77,6 +87,23 @@ public class PaymentRestController {
         List<Payment> findAll = paymentRepository.findAll();
         findAll.forEach(findPayment -> log.info(findPayment.toString()));
 
+        log.info("Confirm Payment : " + id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelPayment(@PathVariable Long id) {
+        ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
+
+        if(reservedPayment.getStatus() == Status.CONFIRMED) {
+            // 이미 Confirm 되었다면..
+            // 결제 취소...
+        }
+
+        reservedPayment.setStatus(Status.CANCEL);
+        reservedPaymentRepository.save(reservedPayment);
+
+        log.info("Cancel Payment : " + id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
