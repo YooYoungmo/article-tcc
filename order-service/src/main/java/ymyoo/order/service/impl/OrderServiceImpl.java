@@ -6,10 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ymyoo.order.Order;
 import ymyoo.order.adapter.ParticipantLink;
-import ymyoo.order.adapter.TccAdapter;
+import ymyoo.order.adapter.TccRestAdapter;
 import ymyoo.order.service.OrderService;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,11 +16,11 @@ import java.util.Map;
 public class OrderServiceImpl implements OrderService {
     private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
 
-    private TccAdapter tccAdapter;
+    private TccRestAdapter tccRestAdapter;
 
     @Autowired
-    public void setTccAdapter(TccAdapter tccAdapter) {
-        this.tccAdapter = tccAdapter;
+    public void setTccRestAdapter(TccRestAdapter tccRestAdapter) {
+        this.tccRestAdapter = tccRestAdapter;
     }
 
     @Override
@@ -34,8 +33,8 @@ public class OrderServiceImpl implements OrderService {
         // 2. 결제 요청(Try)
         ParticipantLink paymentParticipantLink = payOrder(order);
 
+        // Exception Path : Failure Before Confirm
         if(order.getProductId().equals("prd-0002")) {
-            // Exception Path : Failure Before Confirm
             log.info(String.format("Stock URI :%s", stockParticipantLink.getUri()));
             log.info(String.format("Payment URI :%s", paymentParticipantLink.getUri()));
 
@@ -43,7 +42,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 3. 트랜젝션 확정(Confirm)
-        tccAdapter.confirm(stockParticipantLink.getUri(), paymentParticipantLink.getUri());
+        tccRestAdapter.confirmAll(stockParticipantLink.getUri(), paymentParticipantLink.getUri());
 
         log.info("End of place order");
     }
@@ -55,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
         requestBody.put("productId", order.getProductId());
         requestBody.put("qty", order.getQty());
 
-        return tccAdapter.doTry(requestURL, requestBody);
+        return tccRestAdapter.reserve(requestURL, requestBody);
     }
 
     private ParticipantLink payOrder(final Order order) {
@@ -64,6 +63,6 @@ public class OrderServiceImpl implements OrderService {
         requestBody.put("orderId", order.getOrderId());
         requestBody.put("paymentAmt", order.getPaymentAmt());
 
-        return tccAdapter.doTry(requestURL, requestBody);
+        return tccRestAdapter.reserve(requestURL, requestBody);
     }
 }
