@@ -1,9 +1,12 @@
 package ymyoo.stock.entity;
 
-import ymyoo.stock.AdjustmentType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ymyoo.stock.Status;
+import ymyoo.stock.dto.StockAdjustment;
 
 import javax.persistence.*;
+import java.io.IOException;
 import java.util.Date;
 
 @Entity
@@ -12,12 +15,7 @@ public class ReservedStock {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private AdjustmentType adjustmentType;
-
-    private String productId;
-
-    private Long qty;
+    private String resources;
 
     @Enumerated(EnumType.STRING)
     private Status status;
@@ -28,10 +26,15 @@ public class ReservedStock {
     public ReservedStock() {
     }
 
-    public ReservedStock(AdjustmentType adjustmentType, String productId, Long qty) {
-        this.adjustmentType = adjustmentType;
-        this.productId = productId;
-        this.qty = qty;
+    public ReservedStock(StockAdjustment stockAdjustment) {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            this.resources = objectMapper.writeValueAsString(stockAdjustment);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
         this.created = new Date();
     }
 
@@ -39,16 +42,15 @@ public class ReservedStock {
         return id;
     }
 
-    public AdjustmentType getAdjustmentType() {
-        return adjustmentType;
-    }
+    public StockAdjustment getResources() {
+        ObjectMapper objectMapper = new ObjectMapper();
 
-    public String getProductId() {
-        return productId;
-    }
-
-    public Long getQty() {
-        return qty;
+        try {
+            return objectMapper.readValue(this.resources, StockAdjustment.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public Status getStatus() {
@@ -61,18 +63,6 @@ public class ReservedStock {
 
     public Date getCreated() {
         return created;
-    }
-
-    @Override
-    public String toString() {
-        return "ReservedStock{" +
-                "id=" + id +
-                ", adjustmentType=" + adjustmentType +
-                ", productId='" + productId + '\'' +
-                ", qty=" + qty +
-                ", status=" + status +
-                ", created=" + created +
-                '}';
     }
 }
 

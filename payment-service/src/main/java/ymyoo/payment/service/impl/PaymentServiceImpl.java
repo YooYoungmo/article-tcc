@@ -38,7 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public ReservedPayment reservePayment(PaymentRequest paymentRequest) {
-        ReservedPayment reservedPayment = new ReservedPayment(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt());
+        ReservedPayment reservedPayment = new ReservedPayment(paymentRequest);
         reservedPaymentRepository.save(reservedPayment);
 
         log.info("Reserved Payment :" + reservedPayment.getId());
@@ -53,11 +53,11 @@ public class PaymentServiceImpl implements PaymentService {
         validateReservedPayment(reservedPayment);
 
         // Exception Path..
-        if(reservedPayment.getPaymentAmt() >= 300000) {
+        if(reservedPayment.getResources().getPaymentAmt() >= 300000) {
             throw new RuntimeException("결제 제한 금액 초과");
         }
 
-        paymentRepository.save(new Payment(reservedPayment.getOrderId(), reservedPayment.getPaymentAmt()));
+        paymentRepository.save(new Payment(reservedPayment.getResources().getOrderId(), reservedPayment.getResources().getPaymentAmt()));
 
         reservedPayment.setStatus(Status.CONFIRMED);
         reservedPaymentRepository.save(reservedPayment);

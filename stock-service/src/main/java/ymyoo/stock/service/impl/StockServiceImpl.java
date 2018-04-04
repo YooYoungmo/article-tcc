@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ymyoo.stock.AdjustmentType;
 import ymyoo.stock.Status;
 import ymyoo.stock.controller.StockRestController;
 import ymyoo.stock.dto.StockAdjustment;
@@ -39,9 +38,7 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public ReservedStock reserveStock(final StockAdjustment stockAdjustment) {
-        ReservedStock reservedStock = new ReservedStock(AdjustmentType.valueOf(stockAdjustment.getAdjustmentType()),
-                stockAdjustment.getProductId(),
-                stockAdjustment.getQty());
+        ReservedStock reservedStock = new ReservedStock(stockAdjustment);
 
         reservedStockRepository.save(reservedStock);
 
@@ -56,14 +53,11 @@ public class StockServiceImpl implements StockService {
 
         validateReservedStock(reservedStock);
 
-        if(reservedStock.getAdjustmentType() == AdjustmentType.REDUCE) {
-            Stock stock = stockRepository.findByProductId(reservedStock.getProductId());
-            log.info("Before adjustStock : " + stock.toString());
+        if(reservedStock.getResources().getAdjustmentType().equals("REDUCE")) {
+            Stock stock = stockRepository.findByProductId(reservedStock.getResources().getProductId());
+            stock.decrease(reservedStock.getResources().getQty());
 
-            stock.decrease(reservedStock.getQty());
             stockRepository.save(stock);
-
-            log.info("After adjustStock : " + stock.toString());
         }
 
         reservedStock.setStatus(Status.CONFIRMED);
@@ -112,12 +106,12 @@ public class StockServiceImpl implements StockService {
     }
 
     private void rollbackStock(ReservedStock reservedStock) {
-        Stock stock = stockRepository.findByProductId(reservedStock.getProductId());
+        Stock stock = stockRepository.findByProductId(reservedStock.getResources().getProductId());
 
-        if(reservedStock.getAdjustmentType() == AdjustmentType.REDUCE) {
+        if(reservedStock.getResources().getAdjustmentType().equals("REDUCE")) {
             log.info("Before adjustStock : " + stock.toString());
 
-            stock.decrease(reservedStock.getQty());
+            stock.decrease(reservedStock.getResources().getQty());
             stockRepository.save(stock);
 
             log.info("After adjustStock : " + stock.toString());

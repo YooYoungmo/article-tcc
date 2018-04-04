@@ -1,8 +1,12 @@
 package ymyoo.payment.entity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ymyoo.payment.Status;
+import ymyoo.payment.dto.PaymentRequest;
 
 import javax.persistence.*;
+import java.io.IOException;
 import java.util.Date;
 
 @Entity
@@ -11,9 +15,7 @@ public class ReservedPayment {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String orderId;
-
-    private Long paymentAmt;
+    private String resources;
 
     @Enumerated(EnumType.STRING)
     private Status status;
@@ -21,13 +23,18 @@ public class ReservedPayment {
     @Temporal(TemporalType.TIMESTAMP)
     private Date created;
 
-
     public ReservedPayment() {
     }
 
-    public ReservedPayment(String orderId, Long paymentAmt) {
-        this.orderId = orderId;
-        this.paymentAmt = paymentAmt;
+    public ReservedPayment(PaymentRequest paymentRequest) {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            this.resources = objectMapper.writeValueAsString(paymentRequest);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
         this.created = new Date();
     }
 
@@ -35,12 +42,15 @@ public class ReservedPayment {
         return id;
     }
 
-    public String getOrderId() {
-        return orderId;
-    }
+    public PaymentRequest getResources() {
+        ObjectMapper objectMapper = new ObjectMapper();
 
-    public Long getPaymentAmt() {
-        return paymentAmt;
+        try {
+            return objectMapper.readValue(this.resources, PaymentRequest.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public Status getStatus() {
@@ -55,14 +65,4 @@ public class ReservedPayment {
         return created;
     }
 
-    @Override
-    public String toString() {
-        return "ReservedPayment{" +
-                "id=" + id +
-                ", orderId='" + orderId + '\'' +
-                ", paymentAmt=" + paymentAmt +
-                ", status=" + status +
-                ", created=" + created +
-                '}';
-    }
 }
