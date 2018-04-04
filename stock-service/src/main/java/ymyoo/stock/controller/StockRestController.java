@@ -1,112 +1,61 @@
 package ymyoo.stock.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import ymyoo.stock.AdjustmentType;
-import ymyoo.stock.Status;
 import ymyoo.stock.dto.ParticipantLink;
 import ymyoo.stock.dto.StockAdjustment;
 import ymyoo.stock.entity.ReservedStock;
-import ymyoo.stock.entity.Stock;
-import ymyoo.stock.repository.ReservedStockRepository;
-import ymyoo.stock.repository.StockRepository;
+import ymyoo.stock.service.StockService;
 
 import java.net.URI;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
+
+import static ymyoo.stock.service.impl.StockServiceImpl.TIMEOUT;
 
 @RestController
 @RequestMapping("/api/v1/stocks")
 public class StockRestController {
-    private static final Logger log = LoggerFactory.getLogger(StockRestController.class);
-
-    // 3초 타임 아웃
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
-
-    private StockRepository stockRepository;
-
-    private ReservedStockRepository reservedStockRepository;
+    private StockService stockService;
 
     @Autowired
-    public void setStockRepository(StockRepository stockRepository) {
-        this.stockRepository = stockRepository;
-    }
-
-    @Autowired
-    public void setReservedStockRepository(ReservedStockRepository reservedStockRepository) {
-        this.reservedStockRepository = reservedStockRepository;
+    public void setStockService(StockService stockService) {
+        this.stockService = stockService;
     }
 
     @PostMapping
     public ResponseEntity<ParticipantLink> reserveStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
-        ReservedStock reservedStock = new ReservedStock(AdjustmentType.valueOf(stockAdjustment.getAdjustmentType()),
-                stockAdjustment.getProductId(),
-                stockAdjustment.getQty());
+        final ReservedStock reservedStock = stockService.reserveStock(stockAdjustment);
 
-        reservedStockRepository.save(reservedStock);
+        final ParticipantLink participantLink = buildParticipantLink(reservedStock.getId(), reservedStock.getCreated());
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedStock.getId()).toUri();
-        final long expires = reservedStock.getCreated().getTime() + TIMEOUT;
+        return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
+    }
 
-        log.info("Reserved Stock :" + reservedStock.getId());
-        return new ResponseEntity<>(new ParticipantLink(location, new Date(expires)), HttpStatus.CREATED);
+    private ParticipantLink buildParticipantLink(final Long id, final Date created) {
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
+        final long expires = created.getTime() + TIMEOUT;
+
+        return new ParticipantLink(location, new Date(expires));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmStockAdjustment(@PathVariable Long id) {
-        ReservedStock reservedStock = reservedStockRepository.findOne(id);
-
-        // Cancel 확인
-        if(reservedStock.getStatus() == Status.CANCEL) {
+        try {
+            stockService.confirmStock(id);
+        } catch(IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        // expires 확인
-        final long confirmTime = System.currentTimeMillis();
-        final long tryTime = reservedStock.getCreated().getTime();
-
-        final long duration = confirmTime - tryTime;
-
-        log.info("duration : " + TimeUnit.MILLISECONDS.toSeconds(duration));
-        if(duration > TIMEOUT) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-        if(reservedStock.getAdjustmentType() == AdjustmentType.REDUCE) {
-            Stock stock = stockRepository.findByProductId(reservedStock.getProductId());
-            log.info("Before adjustStock : " + stock.toString());
-
-            stock.reduce(reservedStock.getQty());
-            stockRepository.save(stock);
-
-            log.info("After adjustStock : " + stock.toString());
-        }
-
-        reservedStock.setStatus(Status.CONFIRMED);
-        reservedStockRepository.save(reservedStock);
-
-        log.info("Confirm Stock :" + id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelStockAdjustment(@PathVariable Long id) {
-        ReservedStock reservedStock = reservedStockRepository.findOne(id);
+        stockService.cancelStock(id);
 
-        if(reservedStock.getStatus() == Status.CONFIRMED) {
-            // 이미 Confirm 되었다면..
-            // 재고 되돌리기... 로직
-        }
-
-        reservedStock.setStatus(Status.CANCEL);
-        reservedStockRepository.save(reservedStock);
-
-        log.info("Cancel Stock :" + id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
