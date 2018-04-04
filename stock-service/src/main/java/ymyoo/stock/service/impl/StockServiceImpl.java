@@ -60,7 +60,7 @@ public class StockServiceImpl implements StockService {
             Stock stock = stockRepository.findByProductId(reservedStock.getProductId());
             log.info("Before adjustStock : " + stock.toString());
 
-            stock.reduce(reservedStock.getQty());
+            stock.decrease(reservedStock.getQty());
             stockRepository.save(stock);
 
             log.info("After adjustStock : " + stock.toString());
@@ -101,12 +101,26 @@ public class StockServiceImpl implements StockService {
 
         if(reservedStock.getStatus() == Status.CONFIRMED) {
             // 이미 Confirm 되었다면..
-            // 재고 되돌리기... 로직
+            // 차감된 재고 되돌리기...
+            rollbackStock(reservedStock);
         }
 
         reservedStock.setStatus(Status.CANCEL);
         reservedStockRepository.save(reservedStock);
 
         log.info("Cancel Stock :" + id);
+    }
+
+    private void rollbackStock(ReservedStock reservedStock) {
+        Stock stock = stockRepository.findByProductId(reservedStock.getProductId());
+
+        if(reservedStock.getAdjustmentType() == AdjustmentType.REDUCE) {
+            log.info("Before adjustStock : " + stock.toString());
+
+            stock.decrease(reservedStock.getQty());
+            stockRepository.save(stock);
+
+            log.info("After adjustStock : " + stock.toString());
+        }
     }
 }

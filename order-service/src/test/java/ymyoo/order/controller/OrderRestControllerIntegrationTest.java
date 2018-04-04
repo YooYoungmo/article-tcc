@@ -82,7 +82,7 @@ public class OrderRestControllerIntegrationTest {
     }
 
     @Test
-    public void placeOrder_Failure_After_Confirm() {
+    public void placeOrder_Failure_During_Confirm() {
         // given
         final String requestURL = "/api/v1/orders";
 

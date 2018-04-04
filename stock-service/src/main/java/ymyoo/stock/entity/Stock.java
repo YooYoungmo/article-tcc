@@ -36,8 +36,12 @@ public class Stock {
         return availableStockQty;
     }
 
-    public void reduce(Long qty) {
+    public void decrease(Long qty) {
         this.availableStockQty = this.availableStockQty - qty;
+    }
+
+    public void increase(Long qty) {
+        this.availableStockQty = this.availableStockQty + qty;
     }
 
     @Override
