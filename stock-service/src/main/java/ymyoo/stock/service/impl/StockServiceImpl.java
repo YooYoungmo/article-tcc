@@ -86,7 +86,6 @@ public class StockServiceImpl implements StockService {
         if(duration > TIMEOUT) {
             throw new IllegalArgumentException("Expired");
         }
-
     }
 
     private void validateStatus(ReservedStock reservedStock) {

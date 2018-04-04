@@ -1,109 +1,62 @@
 package ymyoo.payment.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import ymyoo.payment.Status;
 import ymyoo.payment.dto.ParticipantLink;
 import ymyoo.payment.dto.PaymentRequest;
-import ymyoo.payment.entity.Payment;
 import ymyoo.payment.entity.ReservedPayment;
-import ymyoo.payment.repository.PaymentRepository;
-import ymyoo.payment.repository.ReservedPaymentRepository;
+import ymyoo.payment.service.PaymentService;
 
 import java.net.URI;
 import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+
+import static ymyoo.payment.service.impl.PaymentServiceImpl.TIMEOUT;
 
 @RestController
 @RequestMapping("/api/v1/payments")
 public class PaymentRestController {
-    // 3초 타임 아웃
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
-    private static final Logger log = LoggerFactory.getLogger(PaymentRestController.class);
-
-    private PaymentRepository paymentRepository;
-
-    private ReservedPaymentRepository reservedPaymentRepository;
+    private PaymentService paymentService;
 
     @Autowired
-    public void setReservedPaymentRepository(ReservedPaymentRepository reservedPaymentRepository) {
-        this.reservedPaymentRepository = reservedPaymentRepository;
-    }
-
-    @Autowired
-    public void setPaymentRepository(PaymentRepository paymentRepository) {
-        this.paymentRepository = paymentRepository;
+    public void setPaymentService(PaymentService paymentService) {
+        this.paymentService = paymentService;
     }
 
     @PostMapping
-    public ResponseEntity<ParticipantLink> tryPayment(@RequestBody PaymentRequest paymentRequest) {
-        ReservedPayment reservedPayment = new ReservedPayment(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt());
-        reservedPaymentRepository.save(reservedPayment);
+    public ResponseEntity<ParticipantLink> reservePayment(@RequestBody PaymentRequest paymentRequest) {
+        final ReservedPayment reservedPayment = paymentService.reservePayment(paymentRequest);
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(reservedPayment.getId()).toUri();
-        final long expires = reservedPayment.getCreated().getTime() + TIMEOUT;
+        final ParticipantLink participantLink = buildParticipantLink(reservedPayment.getId(), reservedPayment.getCreated());
 
-        log.info("Reserved Payment : " + reservedPayment.getId());
-        return new ResponseEntity<>(new ParticipantLink(location, new Date(expires)), HttpStatus.CREATED);
+        return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
+    }
+
+    private ParticipantLink buildParticipantLink(final Long id, final Date created) {
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
+        final long expires = created.getTime() + TIMEOUT;
+
+        return new ParticipantLink(location, new Date(expires));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmPayment(@PathVariable Long id) {
-        ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
-
-        if(reservedPayment.getStatus() == Status.CANCEL) {
+        try {
+            paymentService.confirmPayment(id);
+        } catch(IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        if(reservedPayment.getPaymentAmt() >= 300000) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
-        final long confirmTime = System.currentTimeMillis();
-        final long tryTime = reservedPayment.getCreated().getTime();
-
-        final long duration = confirmTime - tryTime;
-
-        log.info("duration : " + TimeUnit.MILLISECONDS.toSeconds(duration));
-        if(duration > TIMEOUT) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-
-
-        paymentRepository.save(new Payment(reservedPayment.getOrderId(), reservedPayment.getPaymentAmt()));
-        paymentRepository.flush();
-
-        reservedPayment.setStatus(Status.CONFIRMED);
-        reservedPaymentRepository.save(reservedPayment);
-
-        log.info("List of Payments");
-        List<Payment> findAll = paymentRepository.findAll();
-        findAll.forEach(findPayment -> log.info(findPayment.toString()));
-
-        log.info("Confirm Payment : " + id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelPayment(@PathVariable Long id) {
-        ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
+        paymentService.cancelPayment(id);
 
-        if(reservedPayment.getStatus() == Status.CONFIRMED) {
-            // 이미 Confirm 되었다면..
-            // 결제 취소...
-        }
-
-        reservedPayment.setStatus(Status.CANCEL);
-        reservedPaymentRepository.save(reservedPayment);
-
-        log.info("Cancel Payment : " + id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
