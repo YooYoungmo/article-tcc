@@ -41,7 +41,7 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Error Before Confirm");
         }
 
-        // 3. 트랜젝션 확정(Confirm)
+        // 3. 트랜잭션 확정(Confirm)
         tccRestAdapter.confirmAll(stockParticipantLink.getUri(), paymentParticipantLink.getUri());
 
         log.info("End of place order");
@@ -54,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
         requestBody.put("productId", order.getProductId());
         requestBody.put("qty", order.getQty());
 
-        return tccRestAdapter.reserve(requestURL, requestBody);
+        return tccRestAdapter.doTry(requestURL, requestBody);
     }
 
     private ParticipantLink payOrder(final Order order) {
@@ -63,6 +63,6 @@ public class OrderServiceImpl implements OrderService {
         requestBody.put("orderId", order.getOrderId());
         requestBody.put("paymentAmt", order.getPaymentAmt());
 
-        return tccRestAdapter.reserve(requestURL, requestBody);
+        return tccRestAdapter.doTry(requestURL, requestBody);
     }
 }

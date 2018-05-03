@@ -19,7 +19,7 @@ public class TccRestAdapterImpl implements TccRestAdapter {
     private RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public ParticipantLink reserve(final String requestURL, final Map<String, Object> requestBody) {
+    public ParticipantLink doTry(final String requestURL, final Map<String, Object> requestBody) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
