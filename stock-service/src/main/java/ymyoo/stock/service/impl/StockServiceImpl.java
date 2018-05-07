@@ -21,7 +21,7 @@ public class StockServiceImpl implements StockService {
     // 3초 타임 아웃
     public static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
-    private static final Logger log = LoggerFactory.getLogger(StockRestController.class);
+    private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
 
     private ReservedStockRepository reservedStockRepository;
     private StockRepository stockRepository;
