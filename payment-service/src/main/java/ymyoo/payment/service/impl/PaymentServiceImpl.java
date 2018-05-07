@@ -37,7 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public ReservedPayment reservePayment(PaymentRequest paymentRequest) {
+    public ReservedPayment tryPayment(PaymentRequest paymentRequest) {
         ReservedPayment reservedPayment = new ReservedPayment(paymentRequest);
         reservedPaymentRepository.save(reservedPayment);
 
