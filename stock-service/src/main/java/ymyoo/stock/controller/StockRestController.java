@@ -27,7 +27,7 @@ public class StockRestController {
 
     @PostMapping
     public ResponseEntity<ParticipantLink> tryStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
-        final ReservedStock reservedStock = stockService.tryStock(stockAdjustment);
+        final ReservedStock reservedStock = stockService.reserveStock(stockAdjustment);
 
         final ParticipantLink participantLink = buildParticipantLink(reservedStock.getId(), reservedStock.getCreated());
 

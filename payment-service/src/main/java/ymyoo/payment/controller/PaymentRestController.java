@@ -28,7 +28,7 @@ public class PaymentRestController {
 
     @PostMapping
     public ResponseEntity<ParticipantLink> tryPayment(@RequestBody PaymentRequest paymentRequest) {
-        final ReservedPayment reservedPayment = paymentService.tryPayment(paymentRequest);
+        final ReservedPayment reservedPayment = paymentService.reservePayment(paymentRequest);
 
         final ParticipantLink participantLink = buildParticipantLink(reservedPayment.getId(), reservedPayment.getCreated());
 

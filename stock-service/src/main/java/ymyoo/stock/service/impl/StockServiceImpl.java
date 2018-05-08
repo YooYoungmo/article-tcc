@@ -37,7 +37,7 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public ReservedStock tryStock(final StockAdjustment stockAdjustment) {
+    public ReservedStock reserveStock(final StockAdjustment stockAdjustment) {
         ReservedStock reservedStock = new ReservedStock(stockAdjustment);
 
         reservedStockRepository.save(reservedStock);

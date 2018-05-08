@@ -4,7 +4,7 @@ import ymyoo.payment.dto.PaymentRequest;
 import ymyoo.payment.entity.ReservedPayment;
 
 public interface PaymentService {
-    ReservedPayment tryPayment(PaymentRequest paymentRequest);
+    ReservedPayment reservePayment(PaymentRequest paymentRequest);
 
     void confirmPayment(Long id);
 

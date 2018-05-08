@@ -4,7 +4,7 @@ import ymyoo.stock.dto.StockAdjustment;
 import ymyoo.stock.entity.ReservedStock;
 
 public interface StockService {
-    ReservedStock tryStock(StockAdjustment stockAdjustment);
+    ReservedStock reserveStock(StockAdjustment stockAdjustment);
 
     void confirmStock(Long id);
 
