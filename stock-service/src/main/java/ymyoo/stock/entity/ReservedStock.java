@@ -27,10 +27,8 @@ public class ReservedStock {
     }
 
     public ReservedStock(StockAdjustment stockAdjustment) {
-        ObjectMapper objectMapper = new ObjectMapper();
-
         try {
-            this.resources = objectMapper.writeValueAsString(stockAdjustment);
+            this.resources = stockAdjustment.serializeJSON();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -42,7 +40,7 @@ public class ReservedStock {
         return id;
     }
 
-    public StockAdjustment getResources() {
+    public StockAdjustment getResourcesToObject() {
         ObjectMapper objectMapper = new ObjectMapper();
 
         try {
@@ -51,6 +49,10 @@ public class ReservedStock {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public String getResources() {
+        return this.resources;
     }
 
     public Status getStatus() {

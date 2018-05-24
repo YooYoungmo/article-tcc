@@ -48,7 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     @Override
     public void confirmPayment(Long id) {
-        ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
+        ReservedPayment reservedPayment = reservedPaymentRepository.getOne(id);
 
         validateReservedPayment(reservedPayment);
 
@@ -90,7 +90,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     @Override
     public void cancelPayment(Long id) {
-        ReservedPayment reservedPayment = reservedPaymentRepository.findOne(id);
+        ReservedPayment reservedPayment = reservedPaymentRepository.getOne(id);
 
         if(reservedPayment.getStatus() == Status.CONFIRMED) {
             // 이미 Confirm 되었다면..

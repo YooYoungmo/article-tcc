@@ -1,5 +1,10 @@
 package ymyoo.stock.dto;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+
 public class StockAdjustment {
     private String productId;
     private String adjustmentType;
@@ -27,5 +32,15 @@ public class StockAdjustment {
 
     public void setProductId(String productId) {
         this.productId = productId;
+    }
+
+    public static StockAdjustment deserializeJSON(final String json) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(json, StockAdjustment.class);
+    }
+
+    public String serializeJSON() throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(this);
     }
 }

@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ymyoo.stock.Status;
-import ymyoo.stock.controller.StockRestController;
+import ymyoo.stock.adapter.messaging.StockAdjustmentChannelAdapter;
 import ymyoo.stock.dto.StockAdjustment;
 import ymyoo.stock.entity.ReservedStock;
 import ymyoo.stock.entity.Stock;
@@ -26,6 +26,8 @@ public class StockServiceImpl implements StockService {
     private ReservedStockRepository reservedStockRepository;
     private StockRepository stockRepository;
 
+    private StockAdjustmentChannelAdapter stockAdjustmentChannelAdapter;
+
     @Autowired
     public void setReservedStockRepository(ReservedStockRepository reservedStockRepository) {
         this.reservedStockRepository = reservedStockRepository;
@@ -34,6 +36,11 @@ public class StockServiceImpl implements StockService {
     @Autowired
     public void setStockRepository(StockRepository stockRepository) {
         this.stockRepository = stockRepository;
+    }
+
+    @Autowired
+    public void setStockAdjustmentChannelAdapter(StockAdjustmentChannelAdapter stockAdjustmentChannelAdapter) {
+        this.stockAdjustmentChannelAdapter = stockAdjustmentChannelAdapter;
     }
 
     @Override
@@ -48,20 +55,18 @@ public class StockServiceImpl implements StockService {
 
     @Transactional
     @Override
-    public void confirmStock(Long id) {
-        ReservedStock reservedStock = reservedStockRepository.findOne(id);
+    public void confirmStock(final Long id) {
+        ReservedStock reservedStock = reservedStockRepository.getOne(id);
 
+        // TODO ReservedStock 자체에서 하도록 변경....
         validateReservedStock(reservedStock);
 
-        if(reservedStock.getResources().getAdjustmentType().equals("REDUCE")) {
-            Stock stock = stockRepository.findByProductId(reservedStock.getResources().getProductId());
-            stock.decrease(reservedStock.getResources().getQty());
-
-            stockRepository.save(stock);
-        }
-
+        // ReservedStock 상태를 Confirm 으로 변경
         reservedStock.setStatus(Status.CONFIRMED);
         reservedStockRepository.save(reservedStock);
+
+        // Messaging Queue 로 전송
+        stockAdjustmentChannelAdapter.send(reservedStock.getResources());
 
         log.info("Confirm Stock :" + id);
     }
@@ -90,8 +95,19 @@ public class StockServiceImpl implements StockService {
 
     @Transactional
     @Override
+    public void decreaseStock(final String productId, final Long qty) {
+        Stock stock = stockRepository.findByProductId(productId);
+        stock.decrease(qty);
+
+        stockRepository.save(stock);
+
+        log.info(String.format("Stock decreased ..[productId : %s][qty  : %d]", productId, qty));
+    }
+
+    @Transactional
+    @Override
     public void cancelStock(Long id) {
-        ReservedStock reservedStock = reservedStockRepository.findOne(id);
+        ReservedStock reservedStock = reservedStockRepository.getOne(id);
 
         if(reservedStock.getStatus() == Status.CONFIRMED) {
             // 이미 Confirm 되었다면..
@@ -106,12 +122,12 @@ public class StockServiceImpl implements StockService {
     }
 
     private void rollbackStock(ReservedStock reservedStock) {
-        Stock stock = stockRepository.findByProductId(reservedStock.getResources().getProductId());
+        Stock stock = stockRepository.findByProductId(reservedStock.getResourcesToObject().getProductId());
 
-        if(reservedStock.getResources().getAdjustmentType().equals("REDUCE")) {
+        if(reservedStock.getResourcesToObject().getAdjustmentType().equals("REDUCE")) {
             log.info("Before adjustStock : " + stock.toString());
 
-            stock.decrease(reservedStock.getResources().getQty());
+            stock.decrease(reservedStock.getResourcesToObject().getQty());
             stockRepository.save(stock);
 
             log.info("After adjustStock : " + stock.toString());
