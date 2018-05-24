@@ -9,4 +9,6 @@ public interface StockService {
     void confirmStock(Long id);
 
     void cancelStock(Long id);
+
+    void decreaseStock(String productId, Long qty);
 }
