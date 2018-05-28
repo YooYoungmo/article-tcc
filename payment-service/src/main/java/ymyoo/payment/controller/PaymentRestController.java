@@ -13,8 +13,6 @@ import ymyoo.payment.service.PaymentService;
 import java.net.URI;
 import java.util.Date;
 
-import static ymyoo.payment.service.impl.PaymentServiceImpl.TIMEOUT;
-
 @RestController
 @RequestMapping("/api/v1/payments")
 public class PaymentRestController {
@@ -30,14 +28,14 @@ public class PaymentRestController {
     public ResponseEntity<ParticipantLink> tryPayment(@RequestBody PaymentRequest paymentRequest) {
         final ReservedPayment reservedPayment = paymentService.reservePayment(paymentRequest);
 
-        final ParticipantLink participantLink = buildParticipantLink(reservedPayment.getId(), reservedPayment.getCreated());
+        final ParticipantLink participantLink = buildParticipantLink(reservedPayment.getId(), reservedPayment.getCreated(), reservedPayment.getTimeout());
 
         return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
     }
 
-    private ParticipantLink buildParticipantLink(final Long id, final Date created) {
+    private ParticipantLink buildParticipantLink(final Long id, final Date created, final Long timeout) {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
-        final long expires = created.getTime() + TIMEOUT;
+        final long expires = created.getTime() + timeout;
 
         return new ParticipantLink(location, new Date(expires));
     }

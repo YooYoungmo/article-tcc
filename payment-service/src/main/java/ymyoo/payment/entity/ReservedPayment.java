@@ -1,16 +1,18 @@
 package ymyoo.payment.entity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ymyoo.payment.Status;
 import ymyoo.payment.dto.PaymentRequest;
 
 import javax.persistence.*;
-import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 @Entity
 public class ReservedPayment {
+    // 3초 타임 아웃
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -27,10 +29,8 @@ public class ReservedPayment {
     }
 
     public ReservedPayment(PaymentRequest paymentRequest) {
-        ObjectMapper objectMapper = new ObjectMapper();
-
         try {
-            this.resources = objectMapper.writeValueAsString(paymentRequest);
+            this.resources = paymentRequest.serializeJSON();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -42,15 +42,8 @@ public class ReservedPayment {
         return id;
     }
 
-    public PaymentRequest getResources() {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            return objectMapper.readValue(this.resources, PaymentRequest.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    public String getResources() {
+        return this.resources;
     }
 
     public Status getStatus() {
@@ -65,4 +58,29 @@ public class ReservedPayment {
         return created;
     }
 
+    public void validate() {
+        validateStatus();
+        validateExpired();
+    }
+
+    private void validateStatus() {
+        if(this.getStatus() == Status.CANCEL) {
+            throw new IllegalArgumentException("Invalidate Status");
+        }
+    }
+
+    private void validateExpired() {
+        final long confirmTime = System.currentTimeMillis();
+        final long reservedTime = this.created.getTime();
+
+        final long duration = confirmTime - reservedTime;
+
+        if(duration > TIMEOUT) {
+            throw new IllegalArgumentException("Expired");
+        }
+    }
+
+    public long getTimeout() {
+        return TIMEOUT;
+    }
 }
