@@ -1,11 +1,11 @@
 package ymyoo.stock.adapter.messaging.impl;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 import ymyoo.stock.adapter.messaging.StockAdjustmentChannelAdapter;
 import ymyoo.stock.dto.StockAdjustment;
@@ -28,19 +28,22 @@ public class StockAdjustmentChannelAdapterKafkaImpl implements StockAdjustmentCh
     }
 
     @Override
-    public void send(String message) {
+    public void publish(String message) {
         this.kafkaTemplate.send(TOPIC, message);
     }
 
     @KafkaListener(topics = TOPIC)
-    public void listen(ConsumerRecord<String, String> cr) {
-        log.info(String.format("Message Received : %s", cr.value()));
+    public void subscribe(String message, Acknowledgment ack) {
+        log.info(String.format("Message Received : %s", message));
 
         try {
-            StockAdjustment stockAdjustment = StockAdjustment.deserializeJSON(cr.value());
+            StockAdjustment stockAdjustment = StockAdjustment.deserializeJSON(message);
             if(stockAdjustment.getAdjustmentType().equals("REDUCE")) {
                 stockService.decreaseStock(stockAdjustment.getProductId(), stockAdjustment.getQty());
             }
+
+            // Kafka Offset Manual Commit
+            ack.acknowledge();
         } catch (Exception e) {
             e.printStackTrace();
         }

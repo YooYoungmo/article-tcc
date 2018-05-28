@@ -18,9 +18,6 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class StockServiceImpl implements StockService {
-    // 3초 타임 아웃
-    public static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
-
     private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
 
     private ReservedStockRepository reservedStockRepository;
@@ -58,39 +55,16 @@ public class StockServiceImpl implements StockService {
     public void confirmStock(final Long id) {
         ReservedStock reservedStock = reservedStockRepository.getOne(id);
 
-        // TODO ReservedStock 자체에서 하도록 변경....
-        validateReservedStock(reservedStock);
+        reservedStock.validate();
 
         // ReservedStock 상태를 Confirm 으로 변경
         reservedStock.setStatus(Status.CONFIRMED);
         reservedStockRepository.save(reservedStock);
 
         // Messaging Queue 로 전송
-        stockAdjustmentChannelAdapter.send(reservedStock.getResources());
+        stockAdjustmentChannelAdapter.publish(reservedStock.getResources());
 
         log.info("Confirm Stock :" + id);
-    }
-
-    private void validateReservedStock(ReservedStock reservedStock) {
-        validateStatus(reservedStock);
-        validateExpired(reservedStock);
-    }
-
-    private void validateExpired(ReservedStock reservedStock) {
-        final long confirmTime = System.currentTimeMillis();
-        final long reservedTime = reservedStock.getCreated().getTime();
-
-        final long duration = confirmTime - reservedTime;
-
-        if(duration > TIMEOUT) {
-            throw new IllegalArgumentException("Expired");
-        }
-    }
-
-    private void validateStatus(ReservedStock reservedStock) {
-        if(reservedStock.getStatus() == Status.CANCEL) {
-            throw new IllegalArgumentException("Invalidate Status");
-        }
     }
 
     @Transactional

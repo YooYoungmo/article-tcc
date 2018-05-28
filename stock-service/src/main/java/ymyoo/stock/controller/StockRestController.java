@@ -13,8 +13,6 @@ import ymyoo.stock.service.StockService;
 import java.net.URI;
 import java.util.Date;
 
-import static ymyoo.stock.service.impl.StockServiceImpl.TIMEOUT;
-
 @RestController
 @RequestMapping("/api/v1/stocks")
 public class StockRestController {
@@ -29,14 +27,14 @@ public class StockRestController {
     public ResponseEntity<ParticipantLink> tryStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
         final ReservedStock reservedStock = stockService.reserveStock(stockAdjustment);
 
-        final ParticipantLink participantLink = buildParticipantLink(reservedStock.getId(), reservedStock.getCreated());
+        final ParticipantLink participantLink = buildParticipantLink(reservedStock.getId(), reservedStock.getCreated(), reservedStock.getTimeout());
 
         return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
     }
 
-    private ParticipantLink buildParticipantLink(final Long id, final Date created) {
+    private ParticipantLink buildParticipantLink(final Long id, final Date created, final Long timeout) {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
-        final long expires = created.getTime() + TIMEOUT;
+        final long expires = created.getTime() + timeout;
 
         return new ParticipantLink(location, new Date(expires));
     }

@@ -8,9 +8,13 @@ import ymyoo.stock.dto.StockAdjustment;
 import javax.persistence.*;
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 @Entity
 public class ReservedStock {
+    // 3초 타임 아웃
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -65,6 +69,32 @@ public class ReservedStock {
 
     public Date getCreated() {
         return created;
+    }
+
+    public void validate() {
+        validateStatus();
+        validateExpired();
+    }
+
+    private void validateStatus() {
+        if(this.getStatus() == Status.CANCEL) {
+            throw new IllegalArgumentException("Invalidate Status");
+        }
+    }
+
+    private void validateExpired() {
+        final long confirmTime = System.currentTimeMillis();
+        final long reservedTime = this.created.getTime();
+
+        final long duration = confirmTime - reservedTime;
+
+        if(duration > TIMEOUT) {
+            throw new IllegalArgumentException("Expired");
+        }
+    }
+
+    public long getTimeout() {
+        return TIMEOUT;
     }
 }
 
