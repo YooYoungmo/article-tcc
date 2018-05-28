@@ -9,4 +9,6 @@ public interface PaymentService {
     void confirmPayment(Long id);
 
     void cancelPayment(Long id);
+
+    void payOrder(String orderId, Long amount);
 }

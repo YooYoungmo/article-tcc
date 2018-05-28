@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ymyoo.payment.Status;
+import ymyoo.payment.adapter.messaging.PaymentOrderChannelAdapter;
 import ymyoo.payment.dto.PaymentRequest;
 import ymyoo.payment.entity.Payment;
 import ymyoo.payment.entity.ReservedPayment;
@@ -26,6 +27,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     private PaymentRepository paymentRepository;
 
+    private PaymentOrderChannelAdapter paymentOrderChannelAdapter;
+
+    @Autowired
+    public void setPaymentOrderChannelAdapter(PaymentOrderChannelAdapter paymentOrderChannelAdapter) {
+        this.paymentOrderChannelAdapter = paymentOrderChannelAdapter;
+    }
+
     @Autowired
     public void setReservedPaymentRepository(ReservedPaymentRepository reservedPaymentRepository) {
         this.reservedPaymentRepository = reservedPaymentRepository;
@@ -38,6 +46,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public ReservedPayment reservePayment(PaymentRequest paymentRequest) {
+        // 결제 가능한지 여부 검증
+//        if(reservedPayment.getResources().getPaymentAmt() >= 300000) {
+//            throw new RuntimeException("결제 제한 금액 초과");
+//        }
+
         ReservedPayment reservedPayment = new ReservedPayment(paymentRequest);
         reservedPaymentRepository.save(reservedPayment);
 
@@ -50,41 +63,25 @@ public class PaymentServiceImpl implements PaymentService {
     public void confirmPayment(Long id) {
         ReservedPayment reservedPayment = reservedPaymentRepository.getOne(id);
 
-        validateReservedPayment(reservedPayment);
-
-        // Exception Path..
-        if(reservedPayment.getResources().getPaymentAmt() >= 300000) {
-            throw new RuntimeException("결제 제한 금액 초과");
-        }
-
-        paymentRepository.save(new Payment(reservedPayment.getResources().getOrderId(), reservedPayment.getResources().getPaymentAmt()));
+        reservedPayment.validate();
 
         reservedPayment.setStatus(Status.CONFIRMED);
         reservedPaymentRepository.save(reservedPayment);
 
+        paymentOrderChannelAdapter.publish(reservedPayment.getResources());
+
         log.info("Confirm Payment : " + id);
     }
 
-    private void validateReservedPayment(ReservedPayment reservedPayment) {
-        validateStatus(reservedPayment);
-        validateExpired(reservedPayment);
-    }
+    @Transactional
+    @Override
+    public void payOrder(final String orderId, final Long amount) {
+        // Payment Gateway 연동 등등..
+        // ...
+        final Payment payment = new Payment(orderId, amount);
+        paymentRepository.save(payment);
 
-    private void validateStatus(ReservedPayment reservedPayment) {
-        if (reservedPayment.getStatus() == Status.CANCEL) {
-            throw new IllegalArgumentException("Invalidate Status");
-        }
-    }
-
-    private void validateExpired(ReservedPayment reservedPayment) {
-        final long confirmTime = System.currentTimeMillis();
-        final long reservedTime = reservedPayment.getCreated().getTime();
-
-        final long duration = confirmTime - reservedTime;
-
-        if(duration > TIMEOUT) {
-            throw new IllegalArgumentException("Expired");
-        }
+        log.info(String.format("Order payed ..[orderId : %s][amount  : %d]", orderId, amount));
     }
 
     @Transactional
