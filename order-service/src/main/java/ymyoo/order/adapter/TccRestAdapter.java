@@ -1,9 +1,9 @@
 package ymyoo.order.adapter;
 
-import java.net.URI;
-import java.util.Map;
+import java.util.List;
 
 public interface TccRestAdapter {
-    ParticipantLink doTry(final String requestURL, final Map<String, Object> requestBody);
-    void confirmAll(URI... uris);
+    List<ParticipantLink> doTry(List<ParticipationRequest> participationRequests);
+    void confirmAll(List<ParticipantLink> participantLinks);
+    void cancelAll(List<ParticipantLink> participantLinks);
 }

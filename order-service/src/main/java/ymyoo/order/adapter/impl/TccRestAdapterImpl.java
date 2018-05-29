@@ -2,15 +2,19 @@ package ymyoo.order.adapter.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import ymyoo.order.adapter.ParticipantLink;
+import ymyoo.order.adapter.ParticipationRequest;
 import ymyoo.order.adapter.TccRestAdapter;
 
-import java.net.URI;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class TccRestAdapterImpl implements TccRestAdapter {
@@ -19,40 +23,47 @@ public class TccRestAdapterImpl implements TccRestAdapter {
     private RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public ParticipantLink doTry(final String requestURL, final Map<String, Object> requestBody) {
+    public List<ParticipantLink> doTry(List<ParticipationRequest> participationRequests) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<ParticipantLink> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), ParticipantLink.class);
+        List<ParticipantLink> participantLinks = new ArrayList<>();
 
-        if(response.getStatusCode() != HttpStatus.CREATED) {
-            throw new RuntimeException(String.format("TRY Error[URI : %s][HTTP Status : %s]",
-                    requestURL, response.getStatusCode().name()));
-        }
+        participationRequests.forEach(participationRequest -> {
+            try {
+                ResponseEntity<ParticipantLink> response = restTemplate.postForEntity(participationRequest.getUrl(),
+                        new HttpEntity(participationRequest.getRequestBody(), headers), ParticipantLink.class);
 
-        return response.getBody();
+                log.info(String.format("ParticipantLink URI :%s", response.getBody().getUri()));
+                participantLinks.add(response.getBody());
+            } catch (RestClientException e) {
+                cancelAll(participantLinks);
+                throw new RuntimeException(String.format("TCC - Try Error[URI : %s]", participationRequest.getUrl()), e);
+            }
+        });
+
+        return participantLinks;
     }
 
     @Override
-    public void confirmAll(final URI... uris) {
-        for (URI uri : uris) {
+    public void cancelAll(List<ParticipantLink> participantLinks) {
+        participantLinks.forEach(participantLink -> {
             try {
-                restTemplate.put(uri, null);
+                restTemplate.delete(participantLink.getUri());
             } catch (RestClientException e) {
-                cancelAll(uris);
-                throw new RuntimeException(String.format("Confirm Error[URI : %s]",
-                        uri.toString()), e);
+                log.error(String.format("TCC - Cancel Error[URI : %s]", participantLink.getUri().toString()), e);
             }
-        }
+        });
     }
 
-    private void cancelAll(final URI... uris) {
-        for (URI uri : uris) {
+    @Override
+    public void confirmAll(List<ParticipantLink> participantLinks) {
+        participantLinks.forEach(participantLink -> {
             try {
-                restTemplate.delete(uri);
+                restTemplate.put(participantLink.getUri(), null);
             } catch (RestClientException e) {
-                log.error(String.format("Cancel Error[URI : %s]", uri.toString()), e);
+                log.error(String.format("TCC - Confirm Error[URI : %s]", participantLink.getUri().toString()), e);
             }
-        }
+        });
     }
 }

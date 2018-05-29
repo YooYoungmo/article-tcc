@@ -36,4 +36,10 @@ public class PaymentRequest {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(this);
     }
+
+    public void validate() {
+        if(this.paymentAmt >= 300000L) {
+            throw new IllegalArgumentException("결제 제한 금액 초과");
+        }
+    }
 }

@@ -14,8 +14,6 @@ import ymyoo.stock.repository.ReservedStockRepository;
 import ymyoo.stock.repository.StockRepository;
 import ymyoo.stock.service.StockService;
 
-import java.util.concurrent.TimeUnit;
-
 @Service
 public class StockServiceImpl implements StockService {
     private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
@@ -80,31 +78,12 @@ public class StockServiceImpl implements StockService {
 
     @Transactional
     @Override
-    public void cancelStock(Long id) {
+    public void cancelStock(final Long id) {
         ReservedStock reservedStock = reservedStockRepository.getOne(id);
-
-        if(reservedStock.getStatus() == Status.CONFIRMED) {
-            // 이미 Confirm 되었다면..
-            // 차감된 재고 되돌리기...
-            rollbackStock(reservedStock);
-        }
 
         reservedStock.setStatus(Status.CANCEL);
         reservedStockRepository.save(reservedStock);
 
         log.info("Cancel Stock :" + id);
-    }
-
-    private void rollbackStock(ReservedStock reservedStock) {
-        Stock stock = stockRepository.findByProductId(reservedStock.getResourcesToObject().getProductId());
-
-        if(reservedStock.getResourcesToObject().getAdjustmentType().equals("REDUCE")) {
-            log.info("Before adjustStock : " + stock.toString());
-
-            stock.decrease(reservedStock.getResourcesToObject().getQty());
-            stockRepository.save(stock);
-
-            log.info("After adjustStock : " + stock.toString());
-        }
     }
 }

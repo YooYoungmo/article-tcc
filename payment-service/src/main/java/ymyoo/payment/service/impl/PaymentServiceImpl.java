@@ -20,9 +20,6 @@ import java.util.concurrent.TimeUnit;
 public class PaymentServiceImpl implements PaymentService {
     private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
-    // 3초 타임 아웃
-    public static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
-
     private ReservedPaymentRepository reservedPaymentRepository;
 
     private PaymentRepository paymentRepository;
@@ -46,10 +43,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public ReservedPayment reservePayment(PaymentRequest paymentRequest) {
-        // 결제 가능한지 여부 검증
-//        if(reservedPayment.getResources().getPaymentAmt() >= 300000) {
-//            throw new RuntimeException("결제 제한 금액 초과");
-//        }
+        // 유효성 검사
+        paymentRequest.validate();
 
         ReservedPayment reservedPayment = new ReservedPayment(paymentRequest);
         reservedPaymentRepository.save(reservedPayment);
@@ -60,7 +55,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public void confirmPayment(Long id) {
+    public void confirmPayment(final Long id) {
         ReservedPayment reservedPayment = reservedPaymentRepository.getOne(id);
 
         reservedPayment.validate();
@@ -70,7 +65,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentOrderChannelAdapter.publish(reservedPayment.getResources());
 
-        log.info("Confirm Payment : " + id);
+        log.info("Confirmed Payment : " + id);
     }
 
     @Transactional
@@ -81,22 +76,16 @@ public class PaymentServiceImpl implements PaymentService {
         final Payment payment = new Payment(orderId, amount);
         paymentRepository.save(payment);
 
-        log.info(String.format("Order payed ..[orderId : %s][amount  : %d]", orderId, amount));
+        log.info(String.format("Paid Order..[orderId : %s][amount  : %d]", orderId, amount));
     }
 
     @Transactional
     @Override
-    public void cancelPayment(Long id) {
+    public void cancelPayment(final Long id) {
         ReservedPayment reservedPayment = reservedPaymentRepository.getOne(id);
-
-        if(reservedPayment.getStatus() == Status.CONFIRMED) {
-            // 이미 Confirm 되었다면..
-            // 결제 취소...
-        }
-
         reservedPayment.setStatus(Status.CANCEL);
         reservedPaymentRepository.save(reservedPayment);
 
-        log.info("Cancel Payment : " + id);
+        log.info("Canceled Payment : " + id);
     }
 }
