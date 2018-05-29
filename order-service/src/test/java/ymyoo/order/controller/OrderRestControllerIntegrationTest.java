@@ -52,7 +52,7 @@ public class OrderRestControllerIntegrationTest {
 
     // If something fails, a polite workflow would explicitly cancel the successful reservations. - http://pautasso.info/talks/2014/wsrest/tcc/rest-tcc.html#/tcc-http-protocol-fail-cancel
     @Test
-    public void placeOrder_Failure_Before_Confirm_By_Cancel() {
+    public void placeOrder_TCC_TRY_단계에서_일부_마이크로_서비스가_실패하는_경우() {
         // given
         final String requestURL = "/api/v1/orders";
 
@@ -82,7 +82,7 @@ public class OrderRestControllerIntegrationTest {
 
     // If something fails, do nothing. The reserved resources will eventually timeout. - http://pautasso.info/talks/2014/wsrest/tcc/rest-tcc.html#/tcc-http-protocol-fail-cancel
     @Test
-    public void placeOrder_Failure_Before_Confirm_By_Timeout() throws InterruptedException {
+    public void placeOrder_TCC_TRY는_모두_성공했지만_내부_오류로_인해_TCC_Confirm_하지_않는_경우() throws InterruptedException {
         // given
         final String requestURL = "/api/v1/orders";
 
@@ -110,6 +110,26 @@ public class OrderRestControllerIntegrationTest {
             ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
             assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         });
+    }
+
+    @Test
+    public void placeOrder_TCC_TRY는_모두_성공했지만_내부_로직_수행_시간이_너무_오래_걸려_TCC_Confirm_중_TIMEOUT_되는_경우() {
+        // given
+        final String requestURL = "/api/v1/orders";
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("productId", "prd-0003");
+        requestBody.put("qty", 1);
+        requestBody.put("paymentAmt", 40000);
+
+        // when
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private List<String> extractParticipantLinkURIs(String text) {
