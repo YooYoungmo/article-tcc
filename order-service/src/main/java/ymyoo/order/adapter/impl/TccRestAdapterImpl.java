@@ -58,11 +58,25 @@ public class TccRestAdapterImpl implements TccRestAdapter {
 
     @Override
     public void confirmAll(List<ParticipantLink> participantLinks) {
+        validateTimeout(participantLinks);
+
         participantLinks.forEach(participantLink -> {
             try {
                 restTemplate.put(participantLink.getUri(), null);
             } catch (RestClientException e) {
                 log.error(String.format("TCC - Confirm Error[URI : %s]", participantLink.getUri().toString()), e);
+            }
+        });
+    }
+
+    private void validateTimeout(List<ParticipantLink> participantLinks) {
+        final long confirmTime = System.currentTimeMillis();
+
+        participantLinks.forEach(participantLink -> {
+            final long expires = participantLink.getExpires().getTime();
+
+            if(confirmTime > expires) {
+                throw new RuntimeException(String.format("TCC - Confirm Error : TIMEOUT [URI:%s]", participantLink.getUri()));
             }
         });
     }

@@ -11,6 +11,7 @@ import ymyoo.order.adapter.TccRestAdapter;
 import ymyoo.order.service.OrderService;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -38,9 +39,20 @@ public class OrderServiceImpl implements OrderService {
         List<ParticipantLink> participantLinks  =
                 tccRestAdapter.doTry(Arrays.asList(stockParticipationRequest, paymentParticipationRequest));
 
-        // Exception Path : Failure Before Confirm - Timeout
+        // Exception Path
+        // ymyoo.order.controller.OrderRestControllerIntegrationTest.placeOrder_TCC_TRY는_모두_성공했지만_내부_오류로_인해_TCC_Confirm_하지_않는_경우
         if(order.getProductId().equals("prd-0002")) {
             throw new RuntimeException("Error Before Confirm...");
+        }
+
+        // Exception Path
+        // ymyoo.order.controller.OrderRestControllerIntegrationTest.placeOrder_TCC_TRY는_모두_성공했지만_내부_로직_수행_시간이_너무_오래_걸려_TCC_Confirm_중_TIMEOUT_되는_경우
+        if(order.getProductId().equals("prd-0003")) {
+            try {
+                waitCurrentThread(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         // 2. TCC - Confirm
@@ -66,5 +78,9 @@ public class OrderServiceImpl implements OrderService {
         requestBody.put("paymentAmt", order.getPaymentAmt());
 
         return new ParticipationRequest(requestURL, requestBody);
+    }
+
+    private void waitCurrentThread(int seconds) throws InterruptedException {
+        Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(seconds));
     }
 }
