@@ -55,6 +55,10 @@ public class StockServiceImpl implements StockService {
     public void confirmStock(Long id, LocalDateTime confirmedTime) {
         ReservedStock reservedStock = reservedStockRepository.getOne(id);
 
+        if(reservedStock == null) {
+            throw new IllegalArgumentException("Not found");
+        }
+
         reservedStock.validate(confirmedTime);
 
         // ReservedStock 상태를 Confirm 으로 변경

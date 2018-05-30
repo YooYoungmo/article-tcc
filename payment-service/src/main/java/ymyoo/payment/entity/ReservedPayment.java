@@ -5,6 +5,8 @@ import ymyoo.payment.Status;
 import ymyoo.payment.dto.PaymentRequest;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +27,10 @@ public class ReservedPayment {
     @Temporal(TemporalType.TIMESTAMP)
     private Date created;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date expires;
+
+
     public ReservedPayment() {
     }
 
@@ -36,6 +42,7 @@ public class ReservedPayment {
         }
 
         this.created = new Date();
+        this.expires = new Date(created.getTime() + TIMEOUT);
     }
 
     public Long getId() {
@@ -58,9 +65,9 @@ public class ReservedPayment {
         return created;
     }
 
-    public void validate() {
+    public void validate(LocalDateTime confirmedTime) {
         validateStatus();
-        validateExpired();
+        validateExpired(confirmedTime);
     }
 
     private void validateStatus() {
@@ -69,18 +76,15 @@ public class ReservedPayment {
         }
     }
 
-    private void validateExpired() {
-        final long confirmTime = System.currentTimeMillis();
-        final long reservedTime = this.created.getTime();
+    private void validateExpired(LocalDateTime confirmedTime) {
+        LocalDateTime expiresTime = this.expires.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-        final long duration = confirmTime - reservedTime;
-
-        if(duration > TIMEOUT) {
+        if(confirmedTime.isAfter(expiresTime)) {
             throw new IllegalArgumentException("Expired");
         }
     }
 
-    public long getTimeout() {
-        return TIMEOUT;
+    public Date getExpires() {
+        return expires;
     }
 }
