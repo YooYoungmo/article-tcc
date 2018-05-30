@@ -14,6 +14,8 @@ import ymyoo.stock.repository.ReservedStockRepository;
 import ymyoo.stock.repository.StockRepository;
 import ymyoo.stock.service.StockService;
 
+import java.time.LocalDateTime;
+
 @Service
 public class StockServiceImpl implements StockService {
     private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
@@ -50,10 +52,10 @@ public class StockServiceImpl implements StockService {
 
     @Transactional
     @Override
-    public void confirmStock(final Long id) {
+    public void confirmStock(Long id, LocalDateTime confirmedTime) {
         ReservedStock reservedStock = reservedStockRepository.getOne(id);
 
-        reservedStock.validate();
+        reservedStock.validate(confirmedTime);
 
         // ReservedStock 상태를 Confirm 으로 변경
         reservedStock.setStatus(Status.CONFIRMED);

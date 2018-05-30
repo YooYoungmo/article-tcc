@@ -7,6 +7,8 @@ import ymyoo.stock.dto.StockAdjustment;
 
 import javax.persistence.*;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +29,10 @@ public class ReservedStock {
     @Temporal(TemporalType.TIMESTAMP)
     private Date created;
 
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date expires;
+
     public ReservedStock() {
     }
 
@@ -38,21 +44,11 @@ public class ReservedStock {
         }
 
         this.created = new Date();
+        this.expires = new Date(created.getTime() + TIMEOUT);
     }
 
     public Long getId() {
         return id;
-    }
-
-    public StockAdjustment getResourcesToObject() {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            return objectMapper.readValue(this.resources, StockAdjustment.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public String getResources() {
@@ -71,30 +67,27 @@ public class ReservedStock {
         return created;
     }
 
-    public void validate() {
+    public void validate(LocalDateTime confirmedTime) {
         validateStatus();
-        validateExpired();
+        validateExpired(confirmedTime);
     }
 
     private void validateStatus() {
-        if(this.getStatus() == Status.CANCEL) {
+        if(this.getStatus() == Status.CANCEL || this.getStatus() == Status.CONFIRMED) {
             throw new IllegalArgumentException("Invalidate Status");
         }
     }
 
-    private void validateExpired() {
-        final long confirmTime = System.currentTimeMillis();
-        final long reservedTime = this.created.getTime();
+    private void validateExpired(LocalDateTime confirmedTime) {
+        LocalDateTime expiresTime = this.expires.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-        final long duration = confirmTime - reservedTime;
-
-        if(duration > TIMEOUT) {
+        if(confirmedTime.isAfter(expiresTime)) {
             throw new IllegalArgumentException("Expired");
         }
     }
 
-    public long getTimeout() {
-        return TIMEOUT;
+    public Date getExpires() {
+        return expires;
     }
 }
 

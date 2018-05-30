@@ -1,6 +1,7 @@
 package ymyoo.stock.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +12,8 @@ import ymyoo.stock.entity.ReservedStock;
 import ymyoo.stock.service.StockService;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 @RestController
@@ -27,22 +30,24 @@ public class StockRestController {
     public ResponseEntity<ParticipantLink> tryStockAdjustment(@RequestBody StockAdjustment stockAdjustment) {
         final ReservedStock reservedStock = stockService.reserveStock(stockAdjustment);
 
-        final ParticipantLink participantLink = buildParticipantLink(reservedStock.getId(), reservedStock.getCreated(), reservedStock.getTimeout());
+        final ParticipantLink participantLink = buildParticipantLink(reservedStock.getId(), reservedStock.getExpires());
 
         return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
     }
 
-    private ParticipantLink buildParticipantLink(final Long id, final Date created, final Long timeout) {
+    private ParticipantLink buildParticipantLink(final Long id, final Date expired) {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
-        final long expires = created.getTime() + timeout;
 
-        return new ParticipantLink(location, new Date(expires));
+        return new ParticipantLink(location, expired.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
     }
 
+
     @PutMapping("/{id}")
-    public ResponseEntity<Void> confirmStockAdjustment(@PathVariable Long id) {
+    public ResponseEntity<Void> confirmStockAdjustment(
+            @PathVariable Long id,
+            @RequestHeader(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime) {
         try {
-            stockService.confirmStock(id);
+            stockService.confirmStock(id, confirmedTime);
         } catch(IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

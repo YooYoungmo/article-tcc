@@ -2,10 +2,7 @@ package ymyoo.order.adapter.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -13,6 +10,8 @@ import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.ParticipationRequest;
 import ymyoo.order.adapter.TccRestAdapter;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,24 +57,27 @@ public class TccRestAdapterImpl implements TccRestAdapter {
 
     @Override
     public void confirmAll(List<ParticipantLink> participantLinks) {
-        validateTimeout(participantLinks);
+        final LocalDateTime confirmTime = LocalDateTime.now();
+
+        validateTimeout(confirmTime, participantLinks);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("tcc-confirmed-time", confirmTime.format(DateTimeFormatter.ISO_DATE_TIME));
 
         participantLinks.forEach(participantLink -> {
             try {
-                restTemplate.put(participantLink.getUri(), null);
+                restTemplate.exchange(participantLink.getUri(), HttpMethod.PUT, new HttpEntity(headers), Void.class);
             } catch (RestClientException e) {
                 log.error(String.format("TCC - Confirm Error[URI : %s]", participantLink.getUri().toString()), e);
             }
         });
     }
 
-    private void validateTimeout(List<ParticipantLink> participantLinks) {
-        final long confirmTime = System.currentTimeMillis();
-
+    private void validateTimeout(LocalDateTime confirmTime, List<ParticipantLink> participantLinks) {
         participantLinks.forEach(participantLink -> {
-            final long expires = participantLink.getExpires().getTime();
+            LocalDateTime expiresTime = participantLink.getExpires();
 
-            if(confirmTime > expires) {
+            if(confirmTime.isAfter(expiresTime)) {
                 throw new RuntimeException(String.format("TCC - Confirm Error : TIMEOUT [URI:%s]", participantLink.getUri()));
             }
         });

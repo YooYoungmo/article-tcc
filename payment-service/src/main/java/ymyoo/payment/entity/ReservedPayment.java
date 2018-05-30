@@ -64,7 +64,7 @@ public class ReservedPayment {
     }
 
     private void validateStatus() {
-        if(this.getStatus() == Status.CANCEL) {
+        if(this.getStatus() == Status.CANCEL || this.getStatus() == Status.CONFIRMED) {
             throw new IllegalArgumentException("Invalidate Status");
         }
     }

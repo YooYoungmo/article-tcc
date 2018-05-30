@@ -11,6 +11,7 @@ import ymyoo.payment.entity.ReservedPayment;
 import ymyoo.payment.service.PaymentService;
 
 import java.net.URI;
+import java.time.ZoneId;
 import java.util.Date;
 
 @RestController
@@ -37,7 +38,7 @@ public class PaymentRestController {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
         final long expires = created.getTime() + timeout;
 
-        return new ParticipantLink(location, new Date(expires));
+        return new ParticipantLink(location, new Date(expires).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
     }
 
     @PutMapping("/{id}")
