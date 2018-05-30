@@ -1,6 +1,7 @@
 package ymyoo.payment.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +12,7 @@ import ymyoo.payment.entity.ReservedPayment;
 import ymyoo.payment.service.PaymentService;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
@@ -29,22 +31,23 @@ public class PaymentRestController {
     public ResponseEntity<ParticipantLink> tryPayment(@RequestBody PaymentRequest paymentRequest) {
         final ReservedPayment reservedPayment = paymentService.reservePayment(paymentRequest);
 
-        final ParticipantLink participantLink = buildParticipantLink(reservedPayment.getId(), reservedPayment.getCreated(), reservedPayment.getTimeout());
+        final ParticipantLink participantLink = buildParticipantLink(reservedPayment.getId(), reservedPayment.getExpires());
 
         return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
     }
 
-    private ParticipantLink buildParticipantLink(final Long id, final Date created, final Long timeout) {
+    private ParticipantLink buildParticipantLink(final Long id, final Date expires) {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
-        final long expires = created.getTime() + timeout;
 
-        return new ParticipantLink(location, new Date(expires).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        return new ParticipantLink(location, expires.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> confirmPayment(@PathVariable Long id) {
+    public ResponseEntity<Void> confirmPayment(
+            @RequestHeader(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime,
+            @PathVariable Long id) {
         try {
-            paymentService.confirmPayment(id);
+            paymentService.confirmPayment(id, confirmedTime);
         } catch(IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

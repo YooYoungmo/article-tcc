@@ -10,6 +10,8 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,8 +76,10 @@ public class OrderRestControllerIntegrationTest {
         List<String> uris = extractParticipantLinkURIs(outputCapture.toString());
 
         // Resources가 Cancel 되었는지 확인
+        HttpHeaders confirmRequestHeader = new HttpHeaders();
+        confirmRequestHeader.set("tcc-confirmed-time", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         uris.forEach(uri -> {
-            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
+            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(confirmRequestHeader), String.class);
             assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         });
     }
@@ -106,8 +110,10 @@ public class OrderRestControllerIntegrationTest {
         waitCurrentThread(5);
 
         // 타임 아웃 확인(TCC Timeout)
+        HttpHeaders confirmRequestHeader = new HttpHeaders();
+        confirmRequestHeader.set("tcc-confirmed-time", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         uris.forEach(uri -> {
-            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, null, String.class);
+            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(confirmRequestHeader), String.class);
             assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         });
     }
@@ -130,6 +136,16 @@ public class OrderRestControllerIntegrationTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        // 타임 아웃 확인(TCC Timeout)
+        List<String> uris = extractParticipantLinkURIs(outputCapture.toString());
+
+        HttpHeaders confirmRequestHeader = new HttpHeaders();
+        confirmRequestHeader.set("tcc-confirmed-time", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        uris.forEach(uri -> {
+            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(confirmRequestHeader), String.class);
+            assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        });
     }
 
     private List<String> extractParticipantLinkURIs(String text) {
