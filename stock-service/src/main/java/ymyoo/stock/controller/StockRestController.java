@@ -13,8 +13,6 @@ import ymyoo.stock.service.StockService;
 
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 
 @RestController
 @RequestMapping("/api/v1/stocks")
@@ -35,10 +33,10 @@ public class StockRestController {
         return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
     }
 
-    private ParticipantLink buildParticipantLink(final Long id, final Date expired) {
+    private ParticipantLink buildParticipantLink(final Long id, final LocalDateTime expired) {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
 
-        return new ParticipantLink(location, expired.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        return new ParticipantLink(location, expired);
     }
 
 
