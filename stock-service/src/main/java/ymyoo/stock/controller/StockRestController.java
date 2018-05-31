@@ -42,8 +42,8 @@ public class StockRestController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmStockAdjustment(
-            @RequestHeader(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime) {
         try {
             stockService.confirmStock(id, confirmedTime);
         } catch(IllegalArgumentException e) {

@@ -6,10 +6,13 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.ParticipationRequest;
 import ymyoo.order.adapter.TccRestAdapter;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -61,12 +64,14 @@ public class TccRestAdapterImpl implements TccRestAdapter {
 
         validateTimeout(confirmTime, participantLinks);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("tcc-confirmed-time", confirmTime.format(DateTimeFormatter.ISO_DATE_TIME));
-
         participantLinks.forEach(participantLink -> {
             try {
-                restTemplate.exchange(participantLink.getUri(), HttpMethod.PUT, new HttpEntity(headers), Void.class);
+                URI uri = UriComponentsBuilder.fromUri(participantLink.getUri())
+                        .queryParam("tcc-confirmed-time", confirmTime.format(DateTimeFormatter.ISO_DATE_TIME))
+                        .build()
+                        .toUri();
+
+                restTemplate.put(uri, null);
             } catch (RestClientException e) {
                 log.error(String.format("TCC - Confirm Error[URI : %s]", participantLink.getUri().toString()), e);
             }

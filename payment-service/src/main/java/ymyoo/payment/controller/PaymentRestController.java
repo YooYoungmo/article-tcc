@@ -42,8 +42,8 @@ public class PaymentRestController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> confirmPayment(
-            @RequestHeader(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime) {
         try {
             paymentService.confirmPayment(id, confirmedTime);
         } catch(IllegalArgumentException e) {

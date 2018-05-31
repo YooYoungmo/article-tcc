@@ -72,16 +72,7 @@ public class OrderRestControllerIntegrationTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-
-        List<String> uris = extractParticipantLinkURIs(outputCapture.toString());
-
-        // Resources가 Cancel 되었는지 확인
-        HttpHeaders confirmRequestHeader = new HttpHeaders();
-        confirmRequestHeader.set("tcc-confirmed-time", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
-        uris.forEach(uri -> {
-            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(confirmRequestHeader), String.class);
-            assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        });
+        assertTccResourceRelease();
     }
 
     // If something fails, do nothing. The reserved resources will eventually timeout. - http://pautasso.info/talks/2014/wsrest/tcc/rest-tcc.html#/tcc-http-protocol-fail-cancel
@@ -104,18 +95,10 @@ public class OrderRestControllerIntegrationTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 
-        List<String> uris = extractParticipantLinkURIs(outputCapture.toString());
-
         // 타임 아웃 테스트를 위한 대기
         waitCurrentThread(5);
 
-        // 타임 아웃 확인(TCC Timeout)
-        HttpHeaders confirmRequestHeader = new HttpHeaders();
-        confirmRequestHeader.set("tcc-confirmed-time", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
-        uris.forEach(uri -> {
-            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(confirmRequestHeader), String.class);
-            assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        });
+        assertTccResourceRelease();
     }
 
     @Test
@@ -136,14 +119,16 @@ public class OrderRestControllerIntegrationTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertTccResourceRelease();
+    }
 
-        // 타임 아웃 확인(TCC Timeout)
+    private void assertTccResourceRelease() {
         List<String> uris = extractParticipantLinkURIs(outputCapture.toString());
 
-        HttpHeaders confirmRequestHeader = new HttpHeaders();
-        confirmRequestHeader.set("tcc-confirmed-time", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        final String confirmTime = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
         uris.forEach(uri -> {
-            ResponseEntity<String> confirmResponse = restTemplate.exchange(uri, HttpMethod.PUT, new HttpEntity(confirmRequestHeader), String.class);
+            String requestURI = uri + "?tcc-confirmed-time=" + confirmTime;
+            ResponseEntity<String> confirmResponse = restTemplate.exchange(requestURI, HttpMethod.PUT, null, String.class);
             assertThat(confirmResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         });
     }
