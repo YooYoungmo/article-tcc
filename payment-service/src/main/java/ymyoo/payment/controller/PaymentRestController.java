@@ -13,8 +13,6 @@ import ymyoo.payment.service.PaymentService;
 
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -36,10 +34,10 @@ public class PaymentRestController {
         return new ResponseEntity<>(participantLink, HttpStatus.CREATED);
     }
 
-    private ParticipantLink buildParticipantLink(final Long id, final Date expires) {
+    private ParticipantLink buildParticipantLink(final Long id, final LocalDateTime expires) {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
 
-        return new ParticipantLink(location, expires.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        return new ParticipantLink(location, expires);
     }
 
     @PutMapping("/{id}")

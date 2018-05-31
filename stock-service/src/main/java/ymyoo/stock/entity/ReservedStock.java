@@ -1,21 +1,17 @@
 package ymyoo.stock.entity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ymyoo.stock.Status;
 import ymyoo.stock.dto.StockAdjustment;
 
 import javax.persistence.*;
-import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 public class ReservedStock {
     // 3초 타임 아웃
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(3);
+    private static final long TIMEOUT = 3L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -26,12 +22,9 @@ public class ReservedStock {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date created;
+    private LocalDateTime created;
 
-
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date expires;
+    private LocalDateTime expires;
 
     public ReservedStock() {
     }
@@ -43,8 +36,8 @@ public class ReservedStock {
             e.printStackTrace();
         }
 
-        this.created = new Date();
-        this.expires = new Date(created.getTime() + TIMEOUT);
+        this.created = LocalDateTime.now();
+        this.expires = created.plus(TIMEOUT, ChronoUnit.SECONDS);
     }
 
     public Long getId() {
@@ -63,8 +56,12 @@ public class ReservedStock {
         this.status = status;
     }
 
-    public Date getCreated() {
+    public LocalDateTime getCreated() {
         return created;
+    }
+
+    public LocalDateTime getExpires() {
+        return expires;
     }
 
     public void validate(LocalDateTime confirmedTime) {
@@ -79,15 +76,10 @@ public class ReservedStock {
     }
 
     private void validateExpired(LocalDateTime confirmedTime) {
-        LocalDateTime expiresTime = this.expires.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
-        if(confirmedTime.isAfter(expiresTime)) {
+        if(confirmedTime.isAfter(this.expires)) {
             throw new IllegalArgumentException("Expired");
         }
     }
 
-    public Date getExpires() {
-        return expires;
-    }
 }
 
