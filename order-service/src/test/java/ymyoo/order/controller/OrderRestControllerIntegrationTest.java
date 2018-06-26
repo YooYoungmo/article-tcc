@@ -122,6 +122,28 @@ public class OrderRestControllerIntegrationTest {
         assertTccResourceRelease();
     }
 
+    @Test
+    public void placeOrder_TCC_TRY는_모두_성공했지만_내부_오류_후_명시적으로_Cancel_하는_경우() throws InterruptedException {
+        // given
+        final String requestURL = "/api/v1/orders";
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("productId", "prd-0004");
+        requestBody.put("qty", 1);
+        requestBody.put("paymentAmt", 20000);
+
+        // when
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        assertTccResourceRelease();
+    }
+
     private void assertTccResourceRelease() {
         List<String> uris = extractParticipantLinkURIs(outputCapture.toString());
 

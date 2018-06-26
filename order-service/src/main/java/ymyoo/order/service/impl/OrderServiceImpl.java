@@ -55,6 +55,13 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        // Exception Path
+        // ymyoo.order.controller.OrderRestControllerIntegrationTest.placeOrder_TCC_TRY는_모두_성공했지만_내부_오류_후_명시적으로_Cancel_하는_경우
+        if(order.getProductId().equals("prd-0004")) {
+            tccRestAdapter.cancelAll(participantLinks);
+            throw new RuntimeException("Error Before Confirm...");
+        }
+
         // 2. TCC - Confirm
         tccRestAdapter.confirmAll(participantLinks);
 
