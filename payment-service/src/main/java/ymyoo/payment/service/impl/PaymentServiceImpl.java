@@ -14,9 +14,6 @@ import ymyoo.payment.repository.PaymentRepository;
 import ymyoo.payment.repository.ReservedPaymentRepository;
 import ymyoo.payment.service.PaymentService;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
-
 @Service
 public class PaymentServiceImpl implements PaymentService {
     private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
@@ -56,14 +53,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public void confirmPayment(final Long id, final LocalDateTime confirmedTime) {
+    public void confirmPayment(final Long id) {
         ReservedPayment reservedPayment = reservedPaymentRepository.getOne(id);
 
         if(reservedPayment == null) {
             throw new IllegalArgumentException("Not found");
         }
 
-        reservedPayment.validate(confirmedTime);
+        reservedPayment.validate();
 
         reservedPayment.setStatus(Status.CONFIRMED);
         reservedPaymentRepository.save(reservedPayment);

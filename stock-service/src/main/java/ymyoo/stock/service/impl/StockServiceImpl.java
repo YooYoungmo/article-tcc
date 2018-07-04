@@ -14,8 +14,6 @@ import ymyoo.stock.repository.ReservedStockRepository;
 import ymyoo.stock.repository.StockRepository;
 import ymyoo.stock.service.StockService;
 
-import java.time.LocalDateTime;
-
 @Service
 public class StockServiceImpl implements StockService {
     private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
@@ -52,14 +50,14 @@ public class StockServiceImpl implements StockService {
 
     @Transactional
     @Override
-    public void confirmStock(Long id, LocalDateTime confirmedTime) {
+    public void confirmStock(Long id) {
         ReservedStock reservedStock = reservedStockRepository.getOne(id);
 
         if(reservedStock == null) {
             throw new IllegalArgumentException("Not found");
         }
 
-        reservedStock.validate(confirmedTime);
+        reservedStock.validate();
 
         // ReservedStock 상태를 Confirm 으로 변경
         reservedStock.setStatus(Status.CONFIRMED);

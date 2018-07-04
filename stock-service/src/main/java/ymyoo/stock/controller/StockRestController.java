@@ -1,7 +1,6 @@
 package ymyoo.stock.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,11 +40,9 @@ public class StockRestController {
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> confirmStockAdjustment(
-            @PathVariable Long id,
-            @RequestParam(value="tcc-confirmed-time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime confirmedTime) {
+    public ResponseEntity<Void> confirmStockAdjustment(@PathVariable Long id) {
         try {
-            stockService.confirmStock(id, confirmedTime);
+            stockService.confirmStock(id);
         } catch(IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

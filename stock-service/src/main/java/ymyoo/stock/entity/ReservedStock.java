@@ -64,9 +64,9 @@ public class ReservedStock {
         return expires;
     }
 
-    public void validate(LocalDateTime confirmedTime) {
+    public void validate() {
         validateStatus();
-        validateExpired(confirmedTime);
+        validateExpired();
     }
 
     private void validateStatus() {
@@ -75,8 +75,8 @@ public class ReservedStock {
         }
     }
 
-    private void validateExpired(LocalDateTime confirmedTime) {
-        if(confirmedTime.isAfter(this.expires)) {
+    private void validateExpired() {
+        if(LocalDateTime.now().isAfter(this.expires)) {
             throw new IllegalArgumentException("Expired");
         }
     }

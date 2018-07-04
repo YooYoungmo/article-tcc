@@ -102,27 +102,6 @@ public class OrderRestControllerIntegrationTest {
     }
 
     @Test
-    public void placeOrder_TCC_TRY는_모두_성공했지만_내부_로직_수행_시간이_너무_오래_걸려_TCC_Confirm_중_TIMEOUT_되는_경우() {
-        // given
-        final String requestURL = "/api/v1/orders";
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("productId", "prd-0003");
-        requestBody.put("qty", 1);
-        requestBody.put("paymentAmt", 40000);
-
-        // when
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
-
-        // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertTccResourceRelease();
-    }
-
-    @Test
     public void placeOrder_TCC_TRY는_모두_성공했지만_내부_오류_후_명시적으로_Cancel_하는_경우() throws InterruptedException {
         // given
         final String requestURL = "/api/v1/orders";

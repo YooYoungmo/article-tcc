@@ -9,14 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.ParticipationRequest;
 import ymyoo.order.adapter.TccRestAdapter;
 
-import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,30 +58,11 @@ public class TccRestAdapterImpl implements TccRestAdapter {
 
     @Override
     public void confirmAll(List<ParticipantLink> participantLinks) {
-        final LocalDateTime confirmTime = LocalDateTime.now();
-
-        validateTimeout(confirmTime, participantLinks);
-
         participantLinks.forEach(participantLink -> {
             try {
-                URI uri = UriComponentsBuilder.fromUri(participantLink.getUri())
-                        .queryParam("tcc-confirmed-time", confirmTime.format(DateTimeFormatter.ISO_DATE_TIME))
-                        .build()
-                        .toUri();
-
-                restTemplate.put(uri, null);
+                restTemplate.put(participantLink.getUri(), null);
             } catch (RestClientException e) {
                 log.error(String.format("TCC - Confirm Error[URI : %s]", participantLink.getUri().toString()), e);
-            }
-        });
-    }
-
-    private void validateTimeout(LocalDateTime confirmTime, List<ParticipantLink> participantLinks) {
-        participantLinks.forEach(participantLink -> {
-            LocalDateTime expiresTime = participantLink.getExpires();
-
-            if(confirmTime.isAfter(expiresTime)) {
-                throw new RuntimeException(String.format("TCC - Confirm Error : TIMEOUT [URI:%s]", participantLink.getUri()));
             }
         });
     }
