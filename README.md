@@ -31,12 +31,12 @@ ${kafka-home}/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replicat
 ### Spring 마이크로 서비스
 * Stock Service 실행
 ```
-${project-home}/stock-service > mvn clean spring-boot:run
+${project-home}/stock-service > mvn clean install spring-boot:run
 ```
 
 * Payment Service 실행
 ```
-${project-home}/payment-service > mvn clean spring-boot:run
+${project-home}/payment-service > mvn clean install spring-boot:run
 ```
 
 ### Test
