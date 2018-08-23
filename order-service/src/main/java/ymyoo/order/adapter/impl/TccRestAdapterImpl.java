@@ -2,10 +2,13 @@ package ymyoo.order.adapter.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -22,20 +25,26 @@ public class TccRestAdapterImpl implements TccRestAdapter {
 
     private RestTemplate restTemplate = new RestTemplate();
 
+    @Autowired
+    private RetryTemplate retryTemplate;
+
     @Override
     public List<ParticipantLink> doTry(List<ParticipationRequest> participationRequests) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
         List<ParticipantLink> participantLinks = new ArrayList<>();
-
         participationRequests.forEach(participationRequest -> {
             try {
-                ResponseEntity<ParticipantLink> response = restTemplate.postForEntity(participationRequest.getUrl(),
-                        new HttpEntity(participationRequest.getRequestBody(), headers), ParticipantLink.class);
+                ParticipantLink participantLink = retryTemplate.execute((RetryCallback<ParticipantLink, RestClientException>) context -> {
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    ResponseEntity<ParticipantLink> response = restTemplate.postForEntity(participationRequest.getUrl(),
+                            new HttpEntity(participationRequest.getRequestBody(), headers), ParticipantLink.class);
 
-                log.info(String.format("ParticipantLink URI :%s", response.getBody().getUri()));
-                participantLinks.add(response.getBody());
+                    log.info(String.format("ParticipantLink URI :%s", response.getBody().getUri()));
+
+                    return response.getBody();
+                });
+
+                participantLinks.add(participantLink);
             } catch (RestClientException e) {
                 cancelAll(participantLinks);
                 throw new RuntimeException(String.format("TCC - Try Error[URI : %s]", participationRequest.getUrl()), e);
@@ -49,7 +58,10 @@ public class TccRestAdapterImpl implements TccRestAdapter {
     public void cancelAll(List<ParticipantLink> participantLinks) {
         participantLinks.forEach(participantLink -> {
             try {
-                restTemplate.delete(participantLink.getUri());
+                retryTemplate.execute((RetryCallback<Void, RestClientException>) context -> {
+                    restTemplate.delete(participantLink.getUri());
+                    return null;
+                });
             } catch (RestClientException e) {
                 log.error(String.format("TCC - Cancel Error[URI : %s]", participantLink.getUri().toString()), e);
             }
@@ -60,7 +72,11 @@ public class TccRestAdapterImpl implements TccRestAdapter {
     public void confirmAll(List<ParticipantLink> participantLinks) {
         participantLinks.forEach(participantLink -> {
             try {
-                restTemplate.put(participantLink.getUri(), null);
+                retryTemplate.execute((RetryCallback<Void, RestClientException>) context -> {
+                    restTemplate.put(participantLink.getUri(), null);
+                    return null;
+                });
+
             } catch (RestClientException e) {
                 log.error(String.format("TCC - Confirm Error[URI : %s]", participantLink.getUri().toString()), e);
             }
