@@ -6,9 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 
 public class StockAdjustment {
+    private String orderId;
     private String productId;
     private String adjustmentType;
     private Long qty;
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
 
     public String getAdjustmentType() {
         return adjustmentType;

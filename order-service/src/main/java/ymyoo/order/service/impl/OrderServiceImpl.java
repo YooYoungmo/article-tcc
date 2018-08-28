@@ -64,6 +64,7 @@ public class OrderServiceImpl implements OrderService {
     private ParticipationRequest reduceStock(final Order order) {
         final String requestURL = "http://localhost:8081/api/v1/stocks";
         Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("orderId", order.getOrderId());
         requestBody.put("adjustmentType", "REDUCE");
         requestBody.put("productId", order.getProductId());
         requestBody.put("qty", order.getQty());

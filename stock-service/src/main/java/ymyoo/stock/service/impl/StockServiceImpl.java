@@ -65,19 +65,19 @@ public class StockServiceImpl implements StockService {
 
         // Messaging Queue 로 전송
         stockAdjustmentChannelAdapter.publish(reservedStock.getResources());
-
         log.info("Confirm Stock :" + id);
     }
 
     @Transactional
     @Override
-    public void decreaseStock(final String productId, final Long qty) {
-        Stock stock = stockRepository.findByProductId(productId);
-        stock.decrease(qty);
+    public void decreaseStock(final StockAdjustment stockAdjustment) {
+        Stock stock = stockRepository.findByProductId(stockAdjustment.getProductId());
+        stock.decrease(stockAdjustment.getOrderId(), stockAdjustment.getQty());
 
         stockRepository.save(stock);
 
-        log.info(String.format("Stock decreased ..[productId : %s][qty  : %d]", productId, qty));
+        log.info(String.format("Stock decreased [orderId: %s][productId : %s][qty  : %d]",
+            stockAdjustment.getOrderId(), stockAdjustment.getProductId(), stockAdjustment.getQty()));
     }
 
     @Transactional
@@ -89,5 +89,16 @@ public class StockServiceImpl implements StockService {
         reservedStockRepository.save(reservedStock);
 
         log.info("Cancel Stock :" + id);
+    }
+
+    @Override
+    public boolean isAlreadyProcessedOrderId(String orderId) {
+        Stock stock = stockRepository.findByOrderId(orderId);
+
+        if(stock == null) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }

@@ -10,5 +10,7 @@ public interface StockService {
 
     void cancelStock(Long id);
 
-    void decreaseStock(String productId, Long qty);
+    void decreaseStock(StockAdjustment stockAdjustment);
+
+    boolean isAlreadyProcessedOrderId(String orderId);
 }

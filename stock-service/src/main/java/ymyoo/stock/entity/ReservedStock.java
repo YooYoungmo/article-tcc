@@ -69,7 +69,7 @@ public class ReservedStock {
         validateExpired();
     }
 
-    private void validateStatus() {
+    public void validateStatus() {
         if(this.getStatus() == Status.CANCEL || this.getStatus() == Status.CONFIRMED) {
             throw new IllegalArgumentException("Invalidate Status");
         }
