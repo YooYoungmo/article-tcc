@@ -38,7 +38,13 @@ public class PaymentOrderChannelAdapterKafkaImpl implements PaymentOrderChannelA
 
         try {
             PaymentRequest paymentRequest = PaymentRequest.deserializeJSON(message);
-            paymentService.payOrder(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt());
+
+            // 이미 처리된 주문인지 확인
+            if(paymentService.isAlreadyProcessedOrderId(paymentRequest.getOrderId())) {
+                log.info(String.format("AlreadyProcessedOrderId : [%s]", paymentRequest.getOrderId()));
+            } else {
+                paymentService.payOrder(paymentRequest.getOrderId(), paymentRequest.getPaymentAmt());
+            }
 
             // Kafka Offset Manual Commit
             ack.acknowledge();

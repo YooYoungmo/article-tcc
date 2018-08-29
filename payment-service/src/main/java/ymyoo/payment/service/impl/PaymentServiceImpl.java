@@ -66,7 +66,6 @@ public class PaymentServiceImpl implements PaymentService {
         reservedPaymentRepository.save(reservedPayment);
 
         paymentOrderChannelAdapter.publish(reservedPayment.getResources());
-
         log.info("Confirmed Payment : " + id);
     }
 
@@ -89,5 +88,16 @@ public class PaymentServiceImpl implements PaymentService {
         reservedPaymentRepository.save(reservedPayment);
 
         log.info("Canceled Payment : " + id);
+    }
+
+    @Override
+    public boolean isAlreadyProcessedOrderId(String orderId) {
+        Payment payment = paymentRepository.findByOrderId(orderId);
+
+        if(payment == null) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
