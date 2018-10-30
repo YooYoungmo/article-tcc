@@ -3,10 +3,7 @@ package ymyoo.order.adapter.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
@@ -16,8 +13,12 @@ import ymyoo.order.adapter.ParticipantLink;
 import ymyoo.order.adapter.ParticipationRequest;
 import ymyoo.order.adapter.TccRestAdapter;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Component
 public class TccRestAdapterImpl implements TccRestAdapter {
@@ -34,11 +35,14 @@ public class TccRestAdapterImpl implements TccRestAdapter {
         participationRequests.forEach(participationRequest -> {
             try {
                 ParticipantLink participantLink = retryTemplate.execute((RetryCallback<ParticipantLink, RestClientException>) context -> {
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setContentType(MediaType.APPLICATION_JSON);
-                    ResponseEntity<ParticipantLink> response = restTemplate.postForEntity(participationRequest.getUrl(),
-                            new HttpEntity(participationRequest.getRequestBody(), headers), ParticipantLink.class);
+                    URI uri = URI.create(participationRequest.getUrl());
+                    RequestEntity<Map<String, Object>> request =
+                        RequestEntity.post(uri)
+                            .header(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                            .accept(MediaType.APPLICATION_JSON)
+                            .body(participationRequest.getRequestBody());
 
+                    ResponseEntity<ParticipantLink> response = restTemplate.exchange(request, ParticipantLink.class);
                     log.info(String.format("ParticipantLink URI :%s", response.getBody().getUri()));
 
                     return response.getBody();

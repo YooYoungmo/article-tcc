@@ -10,6 +10,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -43,10 +45,10 @@ public class OrderRestControllerIntegrationTest {
         requestBody.put("paymentAmt", 10000);
 
         // when
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+        RequestEntity<Map<String, Object>> request = RequestEntity.post(URI.create(requestURL))
+            .header(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
+            .body(requestBody);
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -65,10 +67,10 @@ public class OrderRestControllerIntegrationTest {
         requestBody.put("paymentAmt", 300000);
 
         // when
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+        RequestEntity<Map<String, Object>> request = RequestEntity.post(URI.create(requestURL))
+            .header(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
+            .body(requestBody);
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -87,10 +89,10 @@ public class OrderRestControllerIntegrationTest {
         requestBody.put("paymentAmt", 20000);
 
         // when
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+        RequestEntity<Map<String, Object>> request = RequestEntity.post(URI.create(requestURL))
+            .header(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
+            .body(requestBody);
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -112,10 +114,10 @@ public class OrderRestControllerIntegrationTest {
         requestBody.put("paymentAmt", 20000);
 
         // when
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(requestURL, new HttpEntity(requestBody, headers), String.class);
+        RequestEntity<Map<String, Object>> request = RequestEntity.post(URI.create(requestURL))
+            .header(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_VALUE)
+            .body(requestBody);
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
